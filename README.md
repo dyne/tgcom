@@ -37,6 +37,7 @@
 
 - [💾 Install](#-install)
 - [🎮 Quick start](#-quick-start)
+- [📜 Requirements](#-requirements)
 - [🚑 Community & support](#-community--support)
 - [🐋 Docker](#-docker)
 - [😍 Acknowledgements](#-acknowledgements)
@@ -90,6 +91,40 @@ Using Labels for Sections
 tgcom --file main.go --start-label START --end-label END --action comment
 ```
 
+
+**[🔝 back to top](#toc)**
+
+***
+## 📜 Requirements
+
+1. **Language Support**:
+    - The software must support at least JavaScript, Go, and Bash for commenting/uncommenting/toggling lines.
+    - It should be extensible to support additional programming languages.
+
+2. **File Handling**:
+    - Accept filenames as input and work on streams from stdin.
+    - Replace the files in place after making changes.
+    - Create a backup of the original file before making any changes.
+    - Provide a dry-run option to print the changes to stdout instead of modifying the files in place.
+
+3. **Commenting Functionality**:
+    - Comment, uncomment, and toggle comments for:
+        - Single lines
+        - Ranges of lines
+        - A mixture of single lines and ranges
+    - Accept labels for commenting sections, such as heredocs with a start keyword and an end keyword in source files.
+
+4. **Performance**:
+    - The tool must be fast and efficient.
+    - Avoid loading the entire file into memory.
+
+5. **User Interface**:
+    - Provide a command-line interface (CLI) for user interaction.
+    - Allow the CLI to handle multiple files and complex input specifications, such as `main.js:10-20 script.sh:4 index.html:#<p>,#</p>`.
+
+6. **Testing**:
+    - Include test units to ensure reliability and correctness of the software.
+    - Tests should cover various scenarios and edge cases.
 
 **[🔝 back to top](#toc)**
 
