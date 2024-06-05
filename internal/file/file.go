@@ -2,14 +2,14 @@ package file
 
 import (
 	"bufio"
-	"errors"
+	//"errors"
 	"fmt"
 	"io"
 	"os"
 )
 
-func ProcessFile(filePath string, lineNum int, commentChars map[string]string, modFunc func(string, map[string]string) string) error {
-	inputFile, err := os.Open(filePath)
+func ProcessFile(filePath string, lineNum [2]int, commentChars map[string]string, modFunc func(string, map[string]string) string) error {
+	inputFile, err := os.Open(filePath)           // mappa                         // azione da fare
 	if err != nil {
 		return err
 	}
@@ -40,14 +40,14 @@ func ProcessFile(filePath string, lineNum int, commentChars map[string]string, m
 	return nil
 }
 
-func writeChanges(inputFile *os.File, outputFile *os.File, lineNum int, commentChars map[string]string, modFunc func(string, map[string]string) string) error {
+func writeChanges(inputFile *os.File, outputFile *os.File, lineNum [2]int, commentChars map[string]string, modFunc func(string, map[string]string) string) error {
 
 	scanner := bufio.NewScanner(inputFile)
 	writer := bufio.NewWriter(outputFile)
 	currentLine := 1
 	for scanner.Scan() {
 		lineContent := scanner.Text()
-		if currentLine == lineNum {
+		if lineNum[0] <= currentLine && currentLine <= lineNum[1] {
 			lineContent = modFunc(lineContent, commentChars)
 		}
 
@@ -60,9 +60,13 @@ func writeChanges(inputFile *os.File, outputFile *os.File, lineNum int, commentC
 		currentLine++
 
 	}
+
+	/*
 	if lineNum > currentLine {
 		return errors.New("line number is out of range")
 	}
+	*/
+
 	if err := scanner.Err(); err != nil {
 		return err
 	}
