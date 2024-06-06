@@ -20,7 +20,7 @@ func main() {
 	lineStr := *lineFlag
 	action := *actionFlag
 
-	var modFunc func(string, map[string]string) string
+	var modFunc func(string, string) string
 
 	switch action {
 	case "comment":

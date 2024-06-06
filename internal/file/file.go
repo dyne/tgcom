@@ -15,7 +15,7 @@ import (
 )
 
 // ProcessFile processes a single file.
-func ProcessFile(filename string, lineNum [2]int, commentChars map[string]string, modFunc func(string, map[string]string) string) error {
+func ProcessFile(filename string, lineNum [2]int, commentChars string, modFunc func(string, string) string) error {
 	inputFile, err := os.Open(filename)
 	if err != nil {
 		return err
@@ -52,7 +52,7 @@ func ProcessFile(filename string, lineNum [2]int, commentChars map[string]string
 	return nil
 }
 
-func writeChanges(inputFile *os.File, outputFile *os.File, lineNum [2]int, commentChars map[string]string, modFunc func(string, map[string]string) string) error {
+func writeChanges(inputFile *os.File, outputFile *os.File, lineNum [2]int, commentChars string, modFunc func(string, string) string) error {
 	scanner := bufio.NewScanner(inputFile)
 	writer := bufio.NewWriter(outputFile)
 	currentLine := 1
@@ -82,7 +82,7 @@ func writeChanges(inputFile *os.File, outputFile *os.File, lineNum [2]int, comme
 }
 
 // ProcessSingleFile processes a single file specified by filename.
-func ProcessSingleFile(filename string, lineStr string, modFunc func(string, map[string]string) string) error {
+func ProcessSingleFile(filename string, lineStr string, modFunc func(string, string) string) error {
 	startLine, endLine, err := extractLines(lineStr)
 	if err != nil {
 		return err
@@ -157,14 +157,62 @@ func extractLines(lineStr string) (startLine, endLine int, err error) {
 	return
 }
 
-func selectCommentChars(filename string) (map[string]string, error) {
+func selectCommentChars(filename string) (string, error) {
 	extension := filepath.Ext(filename)
-	var commentChars map[string]string
+	var commentChars string
 	switch extension {
 	case ".go":
-		commentChars = language.GoCommentChars
+		commentChars = language.CommentChars["GoLang"]
+	case ".js":
+		commentChars = language.CommentChars["JS"]
+	case ".sh", ".bash":
+		commentChars = language.CommentChars["Bash"]
+	case ".cpp", ".cc", ".h", ".c":
+		commentChars = language.CommentChars["C++/C"]
+	case ".java":
+		commentChars = language.CommentChars["Java"]
+	case ".py":
+		commentChars = language.CommentChars["Pyhton"]
+	case ".rb":
+		commentChars = language.CommentChars["Ruby"]
+	case ".pl":
+		commentChars = language.CommentChars["Perl"]
+	case ".php":
+		commentChars = language.CommentChars["PHP"]
+	case ".swift":
+		commentChars = language.CommentChars["swift"]
+	case ".kt", ".kts":
+		commentChars = language.CommentChars["Kotlin"]
+	case ".R":
+		commentChars = language.CommentChars["R"]
+	case ".hs":
+		commentChars = language.CommentChars["Haskell"]
+	case ".sql":
+		commentChars = language.CommentChars["SQL"]
+	case ".rs":
+		commentChars = language.CommentChars["Rust"]
+	case ".scala":
+		commentChars = language.CommentChars["Scala"]
+	case ".dart":
+		commentChars = language.CommentChars["Dart"]
+	case ".mm":
+		commentChars = language.CommentChars["Objective-C"]
+	case ".m":
+		commentChars = language.CommentChars["MATLAB"]
+	case ".lua":
+		commentChars = language.CommentChars["Lua"]
+	case ".erl":
+		commentChars = language.CommentChars["Erlang"]
+	case ".ex", ".exs":
+		commentChars = language.CommentChars["Elixir"]
+	case ".ts":
+		commentChars = language.CommentChars["TS"]
+	case ".vhdl", ".vhd":
+		commentChars = language.CommentChars["VHDL"]
+	case ".v", ".sv":
+		commentChars = language.CommentChars["Verilog"]
 	default:
-		return nil, fmt.Errorf("unsupported file extension: %s", extension)
+		return "", fmt.Errorf("unsupported file extension: %s", extension)
 	}
 	return commentChars, nil
 }
