@@ -2,14 +2,14 @@ package file
 
 import (
 	"bufio"
-	//"errors"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 )
 
 func ProcessFile(filePath string, lineNum [2]int, commentChars map[string]string, modFunc func(string, map[string]string) string) error {
-	inputFile, err := os.Open(filePath)           // mappa                         // azione da fare
+	inputFile, err := os.Open(filePath) // mappa                         // azione da fare
 	if err != nil {
 		return err
 	}
@@ -61,11 +61,9 @@ func writeChanges(inputFile *os.File, outputFile *os.File, lineNum [2]int, comme
 
 	}
 
-	/*
-	if lineNum > currentLine {
+	if lineNum[1] > currentLine {
 		return errors.New("line number is out of range")
 	}
-	*/
 
 	if err := scanner.Err(); err != nil {
 		return err
