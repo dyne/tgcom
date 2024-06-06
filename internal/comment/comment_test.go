@@ -12,7 +12,8 @@ func TestComment(t *testing.T) {
 	}{
 		{"I want to test!", "// I want to test!"},
 		{"// This is already comment", "// // This is already comment"},
-		{"    This has leading spaces", "//     This has leading spaces"},
+		{"   This has leading spaces", "//    This has leading spaces"},
+		{"		with tab", "// 		with tab"},
 		{"", "// "},
 	}
 
@@ -31,7 +32,8 @@ func TestUncomment(t *testing.T) {
 		expected string
 	}{
 		{"// I want to test!", "I want to test!"},
-		{"//     This has leading spaces", "    This has leading spaces"},
+		{"     // This has leading spaces", "     This has leading spaces"},
+		{"//		with tab", "		with tab"},
 		{"This does not have a comment", "This does not have a comment"},
 	}
 
