@@ -1,161 +1,65 @@
 package main
 
 import (
-    "fmt"
-    "strconv"
-    "strings"
-    "flag"
-    "path/filepath"
-    "github.com/dyne/tgcom/internal/file"
-    "github.com/dyne/tgcom/internal/comment"
-    "github.com/dyne/tgcom/internal/language"
+	"flag"
+	"fmt"
+	"strings"
+
+	"github.com/dyne/tgcom/internal/comment"
+	"github.com/dyne/tgcom/internal/file"
 )
 
-func main(){
-	// interface for the user
-	
-	// definition of the flags for the command line: "file", "line"
+func main() {
 	fileFlag := flag.String("file", "", "The file to process")
-    lineFlag := flag.String("line", "", "The line number or range to modify (e.g., 4 or 10-20)")
-	actionFlag := flag.String("action", "", "can be comment, uncomment or toogle")
-    
-    // Analyize the flags
-    flag.Parse()
+	lineFlag := flag.String("line", "", "The line number or range to modify (e.g., 4 or 10-20)")
+	actionFlag := flag.String("action", "", "can be comment, uncomment or toggle")
 
-    // take arguments of the flags
-    filename := *fileFlag
+	flag.Parse()
+
+	filename := *fileFlag
 	lineStr := *lineFlag
-    action := *actionFlag
+	action := *actionFlag
 
-    var startLine, endLine int
-    var err error
-    var commentChars map[string]string
-    var modFunc func(string, map[string]string) string
+	var modFunc func(string, map[string]string) string
 
-    // check if in filename there are different files
-    if strings.Contains(filename, ","){
-        modFunc = comment.ToggleComments
-        if lineStr != "" && action != ""{
-            fmt.Println("Invalid syntax")
-            return
-        }
-        fileLine := strings.Split(filename, ",")
-        for i:=0; i<len(fileLine); i++ {
-            if strings.Contains(fileLine[i], ":"){
-                sub := strings.Split(fileLine[i], ":")
-                if len(sub) != 2 {
-                    fmt.Println("Invalid syntax format. Use '<filename>:<lines>'")
-                    return
-                }
-                
-                filego := sub[0]
-                lineString := sub[1]
+	switch action {
+	case "comment":
+		modFunc = comment.Comment
+	case "uncomment":
+		modFunc = comment.Uncomment
+	case "toggle":
+		modFunc = comment.ToggleComments
+	case "":
+		// If no action provided, assume toggle
+		modFunc = comment.ToggleComments
+	default:
+		fmt.Println("Invalid action. Please provide 'comment', 'uncomment', or 'toggle'.")
+		flag.PrintDefaults()
+		return
+	}
 
-                // extract starLine and endLine from lineString
-                if strings.Contains(lineString, "-") {
-                    parts := strings.Split(lineString, "-")
-                    if len(parts) != 2 {
-                        fmt.Println("Invalid range format. Use 'start-end'")
-                        return
-                    }
-                    startLine, err = strconv.Atoi(parts[0])
-                    if err != nil || startLine <= 0 {
-                        fmt.Println("Invalid start line number")
-                        return
-                    }
-                    endLine, err = strconv.Atoi(parts[1])
-                    if err != nil || endLine < startLine {
-                        fmt.Println("Invalid end line number.")
-                    return
-                    }
-                } else {
-                    startLine, err = strconv.Atoi(lineString)
-                    if err != nil || startLine <= 0 {
-                        fmt.Println("Please provide a valid positive integer for the line number.")
-                        return
-                    }
-                    endLine = startLine
-                }
+	if filename == "" {
+		fmt.Println("Please provide a filename to process.")
+		flag.PrintDefaults()
+		return
+	}
 
-                // store startLine and endLine in an array
-                lineNum := [2]int{startLine, endLine} 
-
-                // need to know which file you are dealing with, so extract extension of the file
-                extension := filepath.Ext(filego)
-
-                // depending on the extension we select a different map from go.go
-                switch extension {
-                    case ".go":
-                    commentChars = language.GoCommentChars
-                    /* TODO: more possible extensions
-                    case ".js":
-                    case ".html":
-                    */
-                }
-
-                file.ProcessFile(filego, lineNum, commentChars, modFunc)
-
-            } else {
-                fmt.Println("Invalid syntax")
-            }
-        }
-    } else { // just one filename
-
-        if strings.Contains(lineStr, "-") {
-            parts := strings.Split(lineStr, "-")
-            if len(parts) != 2 {
-                fmt.Println("Invalid range format. Use 'start-end'.")
-                return
-            }
-            startLine, err = strconv.Atoi(parts[0])
-            if err != nil || startLine <= 0 {
-                fmt.Println("Invalid start line number.")
-                return
-            }
-            endLine, err = strconv.Atoi(parts[1])
-            if err != nil || endLine < startLine {
-                fmt.Println("Invalid end line number.")
-                return
-            }
-        } else {
-            startLine, err = strconv.Atoi(lineStr)
-            if err != nil || startLine <= 0 {
-                fmt.Println("Please provide a valid positive integer for the line number.")
-                return
-            }
-            endLine = startLine
-        }
-    
-        // Prepare the array that indicates lines to be commented
-        lineNum := [2]int{startLine, endLine} 
-    
-        // need to know which file are you dealing with, so extract extension of the file
-        extension := filepath.Ext(filename)
-    
-        // depending on the extension we select a different map from go.go
-        var commentChars map[string]string
-        switch extension {
-            case ".go":
-                commentChars = language.GoCommentChars
-            // TODO: more possible extensions
-            // case ".js":
-            // case ".html":
-            //
-        }
-    
-        // depending on the action we select a different function from comment.go
-        
-        switch action {
-            case "comment":
-                modFunc = comment.Comment
-            case "uncomment":
-                modFunc = comment.Uncomment
-            case "toggle":
-                modFunc = comment.ToggleComments
-        }
-    
-        // operate on the file
-        file.ProcessFile(filename, lineNum, commentChars, modFunc)
-
-    }
+	if strings.Contains(filename, ",") {
+		if err := file.ProcessMultipleFiles(filename); err != nil {
+			fmt.Println("Error processing files:", err)
+		}
+	} else {
+		if strings.Contains(filename, ":") {
+			parts := strings.Split(filename, ":")
+			if len(parts) != 2 {
+				fmt.Println("Invalid syntax format. Use '<filename>:<lines>'")
+				return
+			}
+			filename = parts[0]
+			lineStr = parts[1]
+		}
+		if err := file.ProcessSingleFile(filename, lineStr, modFunc); err != nil {
+			fmt.Println("Error processing file:", err)
+		}
+	}
 }
