@@ -5,7 +5,7 @@ import (
 )
 
 func TestComment(t *testing.T) {
-	commentChars := map[string]string{"singleLine": "//"}
+	commentChars := "//"
 	tests := []struct {
 		line     string
 		expected string
@@ -26,7 +26,7 @@ func TestComment(t *testing.T) {
 }
 
 func TestUncomment(t *testing.T) {
-	commentChars := map[string]string{"singleLine": "//"}
+	commentChars := "//"
 	tests := []struct {
 		line     string
 		expected string
@@ -46,7 +46,7 @@ func TestUncomment(t *testing.T) {
 }
 
 func TestToggleComments(t *testing.T) {
-	commentChars := map[string]string{"singleLine": "//"}
+	commentChars := "//"
 	tests := []struct {
 		line     string
 		expected string

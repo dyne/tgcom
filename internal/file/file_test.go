@@ -9,14 +9,16 @@ import (
 )
 
 func TestProcessFile(t *testing.T) {
-	commentChars := map[string]string{"singleLine": "+++"}
-
+	commentChars := "+++"
+	modFunc := func(line string, commentChars string) string {
+		return commentChars + " " + line
+	}
 	t.Run("SingleLine", func(t *testing.T) {
 		tmpFile, cleanup := createTempFile(t, "Line 1\nLine 2\nLine 3\nLine 4")
 		defer cleanup()
 
 		lineNum := [2]int{2, 2}
-		if err := ProcessFile(tmpFile.Name(), lineNum, commentChars, comment.Comment); err != nil {
+		if err := ProcessFile(tmpFile.Name(), lineNum, commentChars, modFunc); err != nil {
 			t.Fatalf("ProcessFile failed: %v", err)
 		}
 
@@ -27,7 +29,7 @@ func TestProcessFile(t *testing.T) {
 	t.Run("NonExistingFile", func(t *testing.T) {
 		nonExistingFile := "non_existing_file.txt"
 		lineNum := [2]int{2, 2}
-		err := ProcessFile(nonExistingFile, lineNum, commentChars, comment.Comment)
+		err := ProcessFile(nonExistingFile, lineNum, commentChars, modFunc)
 		if err == nil {
 			t.Fatalf("Expected error for non-existing file, got nil")
 		}
@@ -38,7 +40,7 @@ func TestProcessFile(t *testing.T) {
 		defer cleanup()
 
 		lineNum := [2]int{2, 2}
-		err := ProcessFile(emptyFile.Name(), lineNum, commentChars, comment.Comment)
+		err := ProcessFile(emptyFile.Name(), lineNum, commentChars, modFunc)
 		if err == nil {
 			t.Fatalf("Expected error for empty file, got nil")
 		}
@@ -101,13 +103,13 @@ line 12
 		})
 		defer os.Remove(tt.filename)
 
-		modFunc := func(line string, commentChars map[string]string) string {
-			return comment.Comment(line, commentChars)
+		modFunc := func(line string, commentChars string) string {
+			return commentChars + " " + line
 		}
 
 		err := ProcessSingleFile(tt.filename, tt.lines, modFunc)
 		if (err != nil) != tt.shouldErr {
-			t.Errorf("ProcessSingleFile(%s, %s) error = %v, wantErr %v", tt.filename, tt.lines, err, tt.shouldErr)
+			t.Errorf("ProcessSingleFile(%s, %s) error = %v", tt.filename, tt.lines, err)
 		}
 		if !tt.shouldErr {
 			assertFileContent(t, tt.filename, tt.expected)
@@ -155,7 +157,7 @@ line 6
 
 		err := ProcessMultipleFiles(tt.fileInfo)
 		if (err != nil) != tt.shouldErr {
-			t.Errorf("ProcessMultipleFiles(%s) error = %v, wantErr %v", tt.fileInfo, err, tt.shouldErr)
+			t.Errorf("ProcessMultipleFiles(%s) error = %v", tt.fileInfo, err)
 		}
 		if !tt.shouldErr {
 			for filename, expectedContent := range tt.expected {
@@ -180,7 +182,7 @@ func TestExtractLines(t *testing.T) {
 	for _, tt := range tests {
 		start, end, err := extractLines(tt.lineStr)
 		if (err != nil) != tt.shouldErr {
-			t.Errorf("extractLines(%s) error = %v, wantErr %v", tt.lineStr, err, tt.shouldErr)
+			t.Errorf("extractLines(%s) error = %v", tt.lineStr, err)
 		}
 		if start != tt.startLine || end != tt.endLine {
 			t.Errorf("extractLines(%s) = (%d, %d), want (%d, %d)", tt.lineStr, start, end, tt.startLine, tt.endLine)
@@ -191,19 +193,19 @@ func TestExtractLines(t *testing.T) {
 func TestSelectCommentChars(t *testing.T) {
 	tests := []struct {
 		filename      string
-		expectedChars map[string]string
+		expectedChars string
 		shouldErr     bool
 	}{
-		{"testfile.go", map[string]string{"singleLine": "//", "multiLineStart": "/*", "multiLineEnd": "*/"}, false},
-		{"testfile.py", nil, true},
+		{"testfile.go", "//", false},
+		{"testfile.false", "", true},
 	}
 
 	for _, tt := range tests {
 		commentChars, err := selectCommentChars(tt.filename)
 		if (err != nil) != tt.shouldErr {
-			t.Errorf("selectCommentChars(%s) error = %v, wantErr %v", tt.filename, err, tt.shouldErr)
+			t.Errorf("selectCommentChars(%s) error = %v", tt.filename, err)
 		}
-		if !tt.shouldErr && !equalMaps(commentChars, tt.expectedChars) {
+		if !tt.shouldErr && !(commentChars == tt.expectedChars) {
 			t.Errorf("selectCommentChars(%s) = %v, want %v", tt.filename, commentChars, tt.expectedChars)
 		}
 	}
@@ -269,16 +271,4 @@ func writeTestContent(filename string, lines []string) error {
 		}
 	}
 	return writer.Flush()
-}
-
-func equalMaps(a, b map[string]string) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for k, v := range a {
-		if b[k] != v {
-			return false
-		}
-	}
-	return true
 }
