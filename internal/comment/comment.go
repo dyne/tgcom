@@ -16,8 +16,8 @@ func Uncomment(line string, commentChars map[string]string) string {
 func ToggleComments(line string, commentChars map[string]string) string {
 
 	if strings.HasPrefix(strings.TrimSpace(line), commentChars["singleLine"]) {
-		return strings.TrimPrefix(strings.TrimSpace(line), commentChars["singleLine"]+" ")
+		return Uncomment(line, commentChars)
 	} else {
-		return commentChars["singleLine"] + " " + line
+		return Comment(line, commentChars)
 	}
 }
