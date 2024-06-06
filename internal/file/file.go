@@ -28,19 +28,29 @@ func ProcessFile(filename string, lineNum [2]int, commentChars string, modFunc f
 	if err != nil {
 		return err
 	}
-	defer tmpFile.Close()
 
 	if _, err := inputFile.Seek(0, io.SeekStart); err != nil {
+		tmpFile.Close()
+		os.Remove(tmpfilename)
 		return err
 	}
 
 	err = writeChanges(inputFile, tmpFile, lineNum, commentChars, modFunc)
 	if err != nil {
+		tmpFile.Close()
+		os.Remove(tmpfilename)
 		return err
 	}
 
-	// Close the original file
 	if err := inputFile.Close(); err != nil {
+		tmpFile.Close()
+		os.Remove(tmpfilename)
+		return err
+	}
+
+	// Close the temporary file before renaming
+	if err := tmpFile.Close(); err != nil {
+		os.Remove(tmpfilename)
 		return err
 	}
 
