@@ -15,29 +15,13 @@ import (
 )
 
 // ProcessFile processes a single file.
-<<<<<<< HEAD
-func ProcessFile(filename string, lineNum [2]int, commentChars string, modFunc func(string, string) string) error {
-=======
 func ProcessFile(filename string, lineNum [2]int, commentChars string, modFunc func(string, string) string, dryRun bool) error {
->>>>>>> main
 	inputFile, err := os.Open(filename)
 	if err != nil {
 		return err
 	}
 	defer inputFile.Close()
 
-<<<<<<< HEAD
-	// Create a temporary file
-	tmpfilename := filename + ".tmp"
-	tmpFile, err := os.Create(tmpfilename)
-	if err != nil {
-		return err
-	}
-
-	if _, err := inputFile.Seek(0, io.SeekStart); err != nil {
-		tmpFile.Close()
-		os.Remove(tmpfilename)
-=======
 	if dryRun {
 		// Perform a dry run: print the changes instead of writing them
 		return printChanges(inputFile, lineNum, commentChars, modFunc)
@@ -62,52 +46,31 @@ func ProcessFile(filename string, lineNum [2]int, commentChars string, modFunc f
 		restoreBackup(filename, backupFilename)
 		tmpFile.Close()
 		os.Remove(tmpFilename)
->>>>>>> main
 		return err
 	}
 
 	err = writeChanges(inputFile, tmpFile, lineNum, commentChars, modFunc)
 	if err != nil {
-<<<<<<< HEAD
-		tmpFile.Close()
-		os.Remove(tmpfilename)
-=======
 		restoreBackup(filename, backupFilename)
 		tmpFile.Close()
 		os.Remove(tmpFilename)
->>>>>>> main
 		return err
 	}
 
 	if err := inputFile.Close(); err != nil {
-<<<<<<< HEAD
-		tmpFile.Close()
-		os.Remove(tmpfilename)
-=======
 		restoreBackup(filename, backupFilename)
 		tmpFile.Close()
 		os.Remove(tmpFilename)
->>>>>>> main
 		return err
 	}
 
 	// Close the temporary file before renaming
 	if err := tmpFile.Close(); err != nil {
-<<<<<<< HEAD
-		os.Remove(tmpfilename)
-=======
 		os.Remove(tmpFilename)
->>>>>>> main
 		return err
 	}
 
 	// Rename temporary file to original file
-<<<<<<< HEAD
-	if err := os.Rename(tmpfilename, filename); err != nil {
-		return err
-	}
-
-=======
 	if err := os.Rename(tmpFilename, filename); err != nil {
 		restoreBackup(filename, backupFilename)
 		return err
@@ -116,7 +79,6 @@ func ProcessFile(filename string, lineNum [2]int, commentChars string, modFunc f
 	// Remove backup file after successful processing
 	os.Remove(backupFilename)
 
->>>>>>> main
 	return nil
 }
 
@@ -149,10 +111,6 @@ func writeChanges(inputFile *os.File, outputFile *os.File, lineNum [2]int, comme
 	return writer.Flush()
 }
 
-<<<<<<< HEAD
-// ProcessSingleFile processes a single file specified by filename.
-func ProcessSingleFile(filename string, lineStr string, modFunc func(string, string) string) error {
-=======
 func printChanges(inputFile *os.File, lineNum [2]int, commentChars string, modFunc func(string, string) string) error {
 	scanner := bufio.NewScanner(inputFile)
 	currentLine := 1
@@ -203,7 +161,6 @@ func restoreBackup(filename, backupFilename string) {
 
 // ProcessSingleFile processes a single file specified by filename.
 func ProcessSingleFile(filename string, lineStr string, modFunc func(string, string) string, dryRun bool) error {
->>>>>>> main
 	startLine, endLine, err := extractLines(lineStr)
 	if err != nil {
 		return err
@@ -215,16 +172,6 @@ func ProcessSingleFile(filename string, lineStr string, modFunc func(string, str
 		return err
 	}
 
-<<<<<<< HEAD
-	return ProcessFile(filename, lineNum, commentChars, modFunc)
-}
-
-// ProcessMultipleFiles processes multiple files specified by comma-separated filenames.
-func ProcessMultipleFiles(filename string) error {
-	fileLine := strings.Split(filename, ",")
-	for _, fileInfo := range fileLine {
-		if err := processFileWithLines(fileInfo); err != nil {
-=======
 	return ProcessFile(filename, lineNum, commentChars, modFunc, dryRun)
 }
 
@@ -233,18 +180,13 @@ func ProcessMultipleFiles(filename string, dryRun bool) error {
 	fileLine := strings.Split(filename, ",")
 	for _, fileInfo := range fileLine {
 		if err := processFileWithLines(fileInfo, dryRun); err != nil {
->>>>>>> main
 			return err
 		}
 	}
 	return nil
 }
 
-<<<<<<< HEAD
-func processFileWithLines(fileInfo string) error {
-=======
 func processFileWithLines(fileInfo string, dryRun bool) error {
->>>>>>> main
 	if !strings.Contains(fileInfo, ":") {
 		return fmt.Errorf("invalid syntax format. Use '<filename>:<lines>'")
 	}
@@ -266,11 +208,7 @@ func processFileWithLines(fileInfo string, dryRun bool) error {
 		return err
 	}
 
-<<<<<<< HEAD
-	return ProcessFile(file, lineNum, commentChars, comment.ToggleComments)
-=======
 	return ProcessFile(file, lineNum, commentChars, comment.ToggleComments, dryRun)
->>>>>>> main
 }
 
 func extractLines(lineStr string) (startLine, endLine int, err error) {
@@ -351,11 +289,8 @@ func selectCommentChars(filename string) (string, error) {
 		commentChars = language.CommentChars["VHDL"]
 	case ".v", ".sv":
 		commentChars = language.CommentChars["Verilog"]
-<<<<<<< HEAD
 	case ".html":
 		commentChars = language.CommentChars["HTML"]
-=======
->>>>>>> main
 	default:
 		return "", fmt.Errorf("unsupported file extension: %s", extension)
 	}

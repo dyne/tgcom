@@ -10,28 +10,17 @@ import (
 )
 
 func main() {
-<<<<<<< HEAD
-
-	fileFlag := flag.String("file", "", "The file to process")
-	lineFlag := flag.String("line", "", "The line number or range to modify (e.g., 4 or 10-20)")
-	actionFlag := flag.String("action", "", "can be comment, uncomment or toggle")
-=======
 	fileFlag := flag.String("file", "", "The file to process")
 	lineFlag := flag.String("line", "", "The line number or range to modify (e.g., 4 or 10-20)")
 	actionFlag := flag.String("action", "", "can be comment, uncomment or toggle")
 	dryRunFlag := flag.Bool("dry-run", false, "Perform a dry run without modifying the files")
->>>>>>> main
 
 	flag.Parse()
 
 	filename := *fileFlag
 	lineStr := *lineFlag
 	action := *actionFlag
-<<<<<<< HEAD
-
-=======
 	dryRun := *dryRunFlag
->>>>>>> main
 	var modFunc func(string, string) string
 
 	switch action {
@@ -57,11 +46,7 @@ func main() {
 	}
 
 	if strings.Contains(filename, ",") {
-<<<<<<< HEAD
-		if err := file.ProcessMultipleFiles(filename); err != nil {
-=======
 		if err := file.ProcessMultipleFiles(filename, dryRun); err != nil {
->>>>>>> main
 			fmt.Println("Error processing files:", err)
 		}
 	} else {
@@ -74,11 +59,7 @@ func main() {
 			filename = parts[0]
 			lineStr = parts[1]
 		}
-<<<<<<< HEAD
-		if err := file.ProcessSingleFile(filename, lineStr, modFunc); err != nil {
-=======
 		if err := file.ProcessSingleFile(filename, lineStr, modFunc, dryRun); err != nil {
->>>>>>> main
 			fmt.Println("Error processing file:", err)
 		}
 	}

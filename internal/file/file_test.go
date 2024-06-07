@@ -2,41 +2,27 @@ package file
 
 import (
 	"bufio"
-<<<<<<< HEAD
-=======
 	"bytes"
 	"io"
->>>>>>> main
 	"os"
 	"testing"
 
 	"github.com/dyne/tgcom/internal/comment"
 )
 
-<<<<<<< HEAD
-=======
 var dryRun = false
 
->>>>>>> main
 func TestProcessFile(t *testing.T) {
 	commentChars := "+++"
 	modFunc := func(line string, commentChars string) string {
 		return commentChars + " " + line
 	}
-<<<<<<< HEAD
-=======
-
->>>>>>> main
 	t.Run("SingleLine", func(t *testing.T) {
 		tmpFile, cleanup := createTempFile(t, "Line 1\nLine 2\nLine 3\nLine 4")
 		defer cleanup()
 
 		lineNum := [2]int{2, 2}
-<<<<<<< HEAD
-		if err := ProcessFile(tmpFile.Name(), lineNum, commentChars, modFunc); err != nil {
-=======
 		if err := ProcessFile(tmpFile.Name(), lineNum, commentChars, modFunc, dryRun); err != nil {
->>>>>>> main
 			t.Fatalf("ProcessFile failed: %v", err)
 		}
 
@@ -47,11 +33,7 @@ func TestProcessFile(t *testing.T) {
 	t.Run("NonExistingFile", func(t *testing.T) {
 		nonExistingFile := "non_existing_file.txt"
 		lineNum := [2]int{2, 2}
-<<<<<<< HEAD
-		err := ProcessFile(nonExistingFile, lineNum, commentChars, modFunc)
-=======
 		err := ProcessFile(nonExistingFile, lineNum, commentChars, modFunc, dryRun)
->>>>>>> main
 		if err == nil {
 			t.Fatalf("Expected error for non-existing file, got nil")
 		}
@@ -62,11 +44,7 @@ func TestProcessFile(t *testing.T) {
 		defer cleanup()
 
 		lineNum := [2]int{2, 2}
-<<<<<<< HEAD
-		err := ProcessFile(emptyFile.Name(), lineNum, commentChars, modFunc)
-=======
 		err := ProcessFile(emptyFile.Name(), lineNum, commentChars, modFunc, dryRun)
->>>>>>> main
 		if err == nil {
 			t.Fatalf("Expected error for empty file, got nil")
 		}
@@ -78,19 +56,13 @@ func TestProcessFile(t *testing.T) {
 		defer cleanup()
 
 		lineNum := [2]int{1, 3}
-<<<<<<< HEAD
-		if err := ProcessFile(tmpFile.Name(), lineNum, commentChars, comment.Comment); err != nil {
-=======
 		if err := ProcessFile(tmpFile.Name(), lineNum, commentChars, comment.Comment, dryRun); err != nil {
->>>>>>> main
 			t.Fatalf("ProcessFile failed: %v", err)
 		}
 
 		expected := "+++ Line 1\n+++ Line 2\n+++ Line 3\nLine 4\n"
 		assertFileContent(t, tmpFile.Name(), expected)
 	})
-<<<<<<< HEAD
-=======
 	t.Run("WithBackup", func(t *testing.T) {
 		tmpFile, cleanup := createTempFile(t, "Line 1\nLine 2\nLine 3\nLine 4")
 		defer cleanup()
@@ -144,7 +116,6 @@ func TestProcessFile(t *testing.T) {
 			t.Errorf("Dry run log does not match.\nExpected: %s\nGot: %s", expected, got)
 		}
 	})
->>>>>>> main
 }
 
 func TestProcessSingleFile(t *testing.T) {
@@ -193,11 +164,7 @@ line 12
 			return commentChars + " " + line
 		}
 
-<<<<<<< HEAD
-		err := ProcessSingleFile(tt.filename, tt.lines, modFunc)
-=======
 		err := ProcessSingleFile(tt.filename, tt.lines, modFunc, dryRun)
->>>>>>> main
 		if (err != nil) != tt.shouldErr {
 			t.Errorf("ProcessSingleFile(%s, %s) error = %v", tt.filename, tt.lines, err)
 		}
@@ -245,11 +212,7 @@ line 6
 		defer os.Remove("temp_testfile3.go")
 		defer os.Remove("temp_testfile4.go")
 
-<<<<<<< HEAD
-		err := ProcessMultipleFiles(tt.fileInfo)
-=======
 		err := ProcessMultipleFiles(tt.fileInfo, dryRun)
->>>>>>> main
 		if (err != nil) != tt.shouldErr {
 			t.Errorf("ProcessMultipleFiles(%s) error = %v", tt.fileInfo, err)
 		}
