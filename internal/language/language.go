@@ -27,4 +27,5 @@ var CommentChars = map[string]string{
 	"TS" : "//",
 	"VHDL" : "--",
 	"Verilog" : "//",
+	"HTML" : "<!---->",
 }

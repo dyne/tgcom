@@ -10,6 +10,7 @@ import (
 )
 
 func main() {
+
 	fileFlag := flag.String("file", "", "The file to process")
 	lineFlag := flag.String("line", "", "The line number or range to modify (e.g., 4 or 10-20)")
 	actionFlag := flag.String("action", "", "can be comment, uncomment or toggle")
