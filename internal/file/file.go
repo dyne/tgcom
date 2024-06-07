@@ -22,42 +22,57 @@ func ProcessFile(filename string, lineNum [2]int, commentChars string, modFunc f
 	}
 	defer inputFile.Close()
 
-	// Create a temporary file
-	tmpfilename := filename + ".tmp"
-	tmpFile, err := os.Create(tmpfilename)
-	if err != nil {
+	// Create a backup of the original file
+	backupFilename := filename + ".bak"
+	if err := createBackup(filename, backupFilename); err != nil {
 		return err
 	}
 
+	// Create a temporary file
+	tmpFilename := filename + ".tmp"
+	tmpFile, err := os.Create(tmpFilename)
+	if err != nil {
+		restoreBackup(filename, backupFilename)
+		return err
+	}
+	defer tmpFile.Close()
+
 	if _, err := inputFile.Seek(0, io.SeekStart); err != nil {
+		restoreBackup(filename, backupFilename)
 		tmpFile.Close()
-		os.Remove(tmpfilename)
+		os.Remove(tmpFilename)
 		return err
 	}
 
 	err = writeChanges(inputFile, tmpFile, lineNum, commentChars, modFunc)
 	if err != nil {
+		restoreBackup(filename, backupFilename)
 		tmpFile.Close()
-		os.Remove(tmpfilename)
+		os.Remove(tmpFilename)
 		return err
 	}
 
 	if err := inputFile.Close(); err != nil {
+		restoreBackup(filename, backupFilename)
 		tmpFile.Close()
-		os.Remove(tmpfilename)
+		os.Remove(tmpFilename)
 		return err
 	}
 
 	// Close the temporary file before renaming
 	if err := tmpFile.Close(); err != nil {
-		os.Remove(tmpfilename)
+		os.Remove(tmpFilename)
 		return err
 	}
 
 	// Rename temporary file to original file
-	if err := os.Rename(tmpfilename, filename); err != nil {
+	if err := os.Rename(tmpFilename, filename); err != nil {
+		restoreBackup(filename, backupFilename)
 		return err
 	}
+
+	// Remove backup file after successful processing
+	os.Remove(backupFilename)
 
 	return nil
 }
@@ -89,6 +104,33 @@ func writeChanges(inputFile *os.File, outputFile *os.File, lineNum [2]int, comme
 	}
 
 	return writer.Flush()
+}
+func createBackup(filename, backupFilename string) error {
+	inputFile, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer inputFile.Close()
+
+	backupFile, err := os.Create(backupFilename)
+	if err != nil {
+		return err
+	}
+	defer backupFile.Close()
+
+	_, err = io.Copy(backupFile, inputFile)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func restoreBackup(filename, backupFilename string) {
+	// Remove the potentially corrupted file
+	os.Remove(filename)
+	// Restore the backup file
+	os.Rename(backupFilename, filename)
 }
 
 // ProcessSingleFile processes a single file specified by filename.

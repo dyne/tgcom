@@ -59,6 +59,28 @@ func TestProcessFile(t *testing.T) {
 		expected := "+++ Line 1\n+++ Line 2\n+++ Line 3\nLine 4\n"
 		assertFileContent(t, tmpFile.Name(), expected)
 	})
+	t.Run("WithBackup", func(t *testing.T) {
+		tmpFile, cleanup := createTempFile(t, "Line 1\nLine 2\nLine 3\nLine 4")
+		defer cleanup()
+		modFunc := func(line string, commentChars string) string {
+			return ""
+		}
+
+		lineNum := [2]int{3, 10}
+		if err := ProcessFile(tmpFile.Name(), lineNum, commentChars, modFunc); err == nil {
+			t.Fatal("Expected error, got nil")
+		}
+
+		fileContent, err := os.ReadFile(tmpFile.Name())
+		if err != nil {
+			t.Fatalf("Error reading backup file: %v", err)
+		}
+
+		expectedContent := "Line 1\nLine 2\nLine 3\nLine 4"
+		if string(fileContent) != expectedContent {
+			t.Errorf("Backup file content does not match:\nGot:\n%s\nExpected:\n%s", string(fileContent), expectedContent)
+		}
+	})
 }
 
 func TestProcessSingleFile(t *testing.T) {
