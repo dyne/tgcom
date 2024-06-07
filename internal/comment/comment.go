@@ -6,16 +6,20 @@ import (
 
 // Comment adds comments to the specified content based on comment characters.
 func Comment(line string, commentChars string) string {
+<<<<<<< HEAD
 	// just for html
 	if commentChars == "<!---->" {
 		return "<!--" + " " + line + " " + "-->"
 	}
+=======
+>>>>>>> main
 	return commentChars + " " + line
 }
 
 // Uncomment removes comments from the specified content based on comment characters.
 func Uncomment(line string, commentChars string) string {
 	trimmedLine := strings.TrimSpace(line)
+<<<<<<< HEAD
 
 	//just for html
 	if commentChars == "<!---->" {
@@ -38,6 +42,8 @@ func Uncomment(line string, commentChars string) string {
 		}
 	}
 
+=======
+>>>>>>> main
 	if strings.HasPrefix(trimmedLine, commentChars) {
 		// Check for both `//` and `// ` prefixes.
 		if strings.HasPrefix(trimmedLine, commentChars + " ") {
@@ -51,6 +57,7 @@ func Uncomment(line string, commentChars string) string {
 // ToggleComments toggles comments for the specified content based on comment characters.
 func ToggleComments(line string, commentChars string) string {
 	trimmedLine := strings.TrimSpace(line)
+<<<<<<< HEAD
 
 	//just for html
 	if strings.HasPrefix(trimmedLine, "<!--") && strings.HasSuffix(trimmedLine, "-->") {
@@ -59,6 +66,8 @@ func ToggleComments(line string, commentChars string) string {
 		return Comment(line, commentChars)
 	}
 
+=======
+>>>>>>> main
 	if strings.HasPrefix(trimmedLine, commentChars) {
 		return Uncomment(line, commentChars)
 	} else {
