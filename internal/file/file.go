@@ -15,12 +15,17 @@ import (
 )
 
 // ProcessFile processes a single file.
-func ProcessFile(filename string, lineNum [2]int, commentChars string, modFunc func(string, string) string) error {
+func ProcessFile(filename string, lineNum [2]int, commentChars string, modFunc func(string, string) string, dryRun bool) error {
 	inputFile, err := os.Open(filename)
 	if err != nil {
 		return err
 	}
 	defer inputFile.Close()
+
+	if dryRun {
+		// Perform a dry run: print the changes instead of writing them
+		return printChanges(inputFile, lineNum, commentChars, modFunc)
+	}
 
 	// Create a backup of the original file
 	backupFilename := filename + ".bak"
@@ -105,6 +110,27 @@ func writeChanges(inputFile *os.File, outputFile *os.File, lineNum [2]int, comme
 
 	return writer.Flush()
 }
+
+func printChanges(inputFile *os.File, lineNum [2]int, commentChars string, modFunc func(string, string) string) error {
+	scanner := bufio.NewScanner(inputFile)
+	currentLine := 1
+
+	for scanner.Scan() {
+		lineContent := scanner.Text()
+		if lineNum[0] <= currentLine && currentLine <= lineNum[1] {
+			modified := modFunc(lineContent, commentChars)
+			fmt.Printf("%d: %s -> %s\n", currentLine, lineContent, modified)
+		}
+
+		currentLine++
+	}
+
+	if lineNum[1] > currentLine {
+		return errors.New("line number is out of range")
+	}
+
+	return scanner.Err()
+}
 func createBackup(filename, backupFilename string) error {
 	inputFile, err := os.Open(filename)
 	if err != nil {
@@ -134,7 +160,7 @@ func restoreBackup(filename, backupFilename string) {
 }
 
 // ProcessSingleFile processes a single file specified by filename.
-func ProcessSingleFile(filename string, lineStr string, modFunc func(string, string) string) error {
+func ProcessSingleFile(filename string, lineStr string, modFunc func(string, string) string, dryRun bool) error {
 	startLine, endLine, err := extractLines(lineStr)
 	if err != nil {
 		return err
@@ -146,21 +172,21 @@ func ProcessSingleFile(filename string, lineStr string, modFunc func(string, str
 		return err
 	}
 
-	return ProcessFile(filename, lineNum, commentChars, modFunc)
+	return ProcessFile(filename, lineNum, commentChars, modFunc, dryRun)
 }
 
 // ProcessMultipleFiles processes multiple files specified by comma-separated filenames.
-func ProcessMultipleFiles(filename string) error {
+func ProcessMultipleFiles(filename string, dryRun bool) error {
 	fileLine := strings.Split(filename, ",")
 	for _, fileInfo := range fileLine {
-		if err := processFileWithLines(fileInfo); err != nil {
+		if err := processFileWithLines(fileInfo, dryRun); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func processFileWithLines(fileInfo string) error {
+func processFileWithLines(fileInfo string, dryRun bool) error {
 	if !strings.Contains(fileInfo, ":") {
 		return fmt.Errorf("invalid syntax format. Use '<filename>:<lines>'")
 	}
@@ -182,7 +208,7 @@ func processFileWithLines(fileInfo string) error {
 		return err
 	}
 
-	return ProcessFile(file, lineNum, commentChars, comment.ToggleComments)
+	return ProcessFile(file, lineNum, commentChars, comment.ToggleComments, dryRun)
 }
 
 func extractLines(lineStr string) (startLine, endLine int, err error) {
