@@ -7,7 +7,7 @@ var CommentChars = map[string]string{
 	"Bash":        "#",
 	"C++/C":       "//",
 	"Java":        "//",
-	"Pyhton":      "#",
+	"Python":      "#",
 	"Ruby":        "#",
 	"Perl":        "#",
 	"PHP":         "//",
