@@ -13,6 +13,7 @@ func main() {
 	fileFlag := flag.String("file", "", "The file to process")
 	lineFlag := flag.String("line", "", "The line number or range to modify (e.g., 4 or 10-20)")
 	actionFlag := flag.String("action", "", "can be comment, uncomment or toggle")
+	// helpFlag := flag.String("help", "", "can be any command of tgcom")
 	dryRunFlag := flag.Bool("dry-run", false, "Perform a dry run without modifying the files")
 
 	flag.Parse()
@@ -20,6 +21,7 @@ func main() {
 	filename := *fileFlag
 	lineStr := *lineFlag
 	action := *actionFlag
+	// helpFlag := *helpFlag
 	dryRun := *dryRunFlag
 	var modFunc func(string, string) string
 

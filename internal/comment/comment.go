@@ -51,12 +51,13 @@ func Uncomment(line string, commentChars string) string {
 // ToggleComments toggles comments for the specified content based on comment characters.
 func ToggleComments(line string, commentChars string) string {
 	trimmedLine := strings.TrimSpace(line)
-
 	//just for html
-	if strings.HasPrefix(trimmedLine, "<!--") && strings.HasSuffix(trimmedLine, "-->") {
-		return Uncomment(line, commentChars)
-	} else {
-		return Comment(line, commentChars)
+	if commentChars == "<!---->"{
+		if strings.HasPrefix(trimmedLine, "<!--") && strings.HasSuffix(trimmedLine, "-->") {
+			return Uncomment(line, commentChars)
+		} else {
+			return Comment(line, commentChars)
+		}
 	}
 
 	if strings.HasPrefix(trimmedLine, commentChars) {
