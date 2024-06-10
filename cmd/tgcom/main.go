@@ -12,6 +12,8 @@ import (
 func main() {
 	fileFlag := flag.String("file", "", "The file to process")
 	lineFlag := flag.String("line", "", "The line number or range to modify (e.g., 4 or 10-20)")
+	startLabelFlag := flag.String("start-label", "", "The start label for a section")
+	endLabelFlag := flag.String("end-label", "", "The end label for a section")
 	actionFlag := flag.String("action", "", "can be comment, uncomment or toggle")
 	dryRunFlag := flag.Bool("dry-run", false, "Perform a dry run without modifying the files")
 
@@ -19,6 +21,8 @@ func main() {
 
 	filename := *fileFlag
 	lineStr := *lineFlag
+	startLabel := *startLabelFlag
+	endLabel := *endLabelFlag
 	action := *actionFlag
 	dryRun := *dryRunFlag
 	var modFunc func(string, string) string
@@ -59,7 +63,7 @@ func main() {
 			filename = parts[0]
 			lineStr = parts[1]
 		}
-		if err := file.ProcessSingleFile(filename, lineStr, modFunc, dryRun); err != nil {
+		if err := file.ProcessSingleFile(filename, lineStr, startLabel, endLabel, modFunc, dryRun); err != nil {
 			fmt.Println("Error processing file:", err)
 		}
 	}
