@@ -1,0 +1,66 @@
+name: Go CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Setup Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: '1.22' 
+
+    - name: Run static checks
+      run: go vet ./...
+
+    - name: Run audit
+      run: go mod tidy && go mod vendor
+
+    - name: Format code
+      run: go fmt ./...
+
+    - name: Test
+      run: go test -v ./...
+
+    - name: Build
+      run: go build -o tgcom ./cmd/tgcom  
+
+    - name: Semantic Versioning and Release
+      id: semver_release
+      uses: kentaro-m/ghaction-gorelease@v1
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        major_prefix: 'BREAKING'
+        minor_prefix: 'FEATURE'
+        patch_prefix: 'FIX'
+        prefix: 'v'
+
+  release:
+    needs: build
+    name: Release
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Create release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          tgcom
+        token: ${{ secrets.GITHUB_TOKEN }}
+        release_name: ${{ steps.semver_release.outputs.version }}
+        body: |
+          Release ${{ steps.semver_release.outputs.version }}
