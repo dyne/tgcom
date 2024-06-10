@@ -37,30 +37,31 @@ jobs:
     - name: Build
       run: go build -o tgcom ./cmd/tgcom  
 
-    - name: Semantic Versioning and Release
-      id: semver_release
-      uses: kentaro-m/ghaction-gorelease@v1
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        major_prefix: 'BREAKING'
-        minor_prefix: 'FEATURE'
-        patch_prefix: 'FIX'
-        prefix: 'v'
+   - name: Semantic Versioning
+      id: semver
+      run: |
+        VERSION=$(git describe --tags --abbrev=0)
+        if [ -z "$VERSION" ]; then
+          VERSION="v0.1.0"
+        else
+          VERSION=$(echo "$VERSION" | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
+        fi
+        echo "New version: $VERSION"
+        echo "::set-output name=version::$VERSION"
 
   release:
     needs: build
     name: Release
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-
     runs-on: ubuntu-latest
 
     steps:
     - name: Create release
-      uses: softprops/action-gh-release@v1
+      uses: actions/create-release@v1
       with:
-        files: |
-          tgcom
-        token: ${{ secrets.GITHUB_TOKEN }}
-        release_name: ${{ steps.semver_release.outputs.version }}
+        tag_name: ${{ steps.semver.outputs.version }}
+        release_name: ${{ steps.semver.outputs.version }}
         body: |
-          Release ${{ steps.semver_release.outputs.version }}
+          Release ${{ steps.semver.outputs.version }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
