@@ -49,6 +49,23 @@ func main() {
 		return
 	}
 
+	if startLabel == "" && endLabel != "" {
+		fmt.Println("Error: 'startLabel' is required when 'endLabel' is provided.")
+		return
+	} else if startLabel != "" && endLabel == "" {
+		fmt.Println("Error: 'endLabel' is required when 'startLabel' is provided.")
+		return
+	}
+
+	if startLabel != "" && lineStr != "" {
+		fmt.Println("Error: only  line OR label flags are allowed not both")
+	}
+
+	if startLabel != "" && lineStr != "" {
+		fmt.Println("Error: Specify either line number/range OR label, not both.")
+		return
+	}
+
 	if strings.Contains(filename, ",") {
 		if err := file.ProcessMultipleFiles(filename, dryRun); err != nil {
 			fmt.Println("Error processing files:", err)
