@@ -14,8 +14,8 @@ func Uncomment(line string, commentChars string) string {
 	trimmedLine := strings.TrimSpace(line)
 	if strings.HasPrefix(trimmedLine, commentChars) {
 		// Check for both `//` and `// ` prefixes.
-		if strings.HasPrefix(trimmedLine, commentChars + " ") {
-			return strings.Replace(line, commentChars + " ", "", 1)
+		if strings.HasPrefix(trimmedLine, commentChars+" ") {
+			return strings.Replace(line, commentChars+" ", "", 1)
 		}
 		return strings.Replace(line, commentChars, "", 1)
 	}
