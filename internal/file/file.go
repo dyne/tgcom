@@ -15,7 +15,7 @@ import (
 )
 
 // ProcessFile processes a single file.
-func ProcessFile(filename string, lineNum [2]int, commentChars string, modFunc func(string, string) string, dryRun bool) error {
+func ProcessFile(filename string, lineNum [2]int, startLabel, endLabel string, commentChars string, modFunc func(string, string) string, dryRun bool) error {
 	inputFile, err := os.Open(filename)
 	if err != nil {
 		return err
@@ -24,7 +24,7 @@ func ProcessFile(filename string, lineNum [2]int, commentChars string, modFunc f
 
 	if dryRun {
 		// Perform a dry run: print the changes instead of writing them
-		return printChanges(inputFile, lineNum, commentChars, modFunc)
+		return printChanges(inputFile, lineNum, startLabel, endLabel, commentChars, modFunc)
 	}
 
 	// Create a backup of the original file
@@ -49,7 +49,7 @@ func ProcessFile(filename string, lineNum [2]int, commentChars string, modFunc f
 		return err
 	}
 
-	err = writeChanges(inputFile, tmpFile, lineNum, commentChars, modFunc)
+	err = writeChanges(inputFile, tmpFile, lineNum, startLabel, endLabel, commentChars, modFunc)
 	if err != nil {
 		restoreBackup(filename, backupFilename)
 		tmpFile.Close()
@@ -82,55 +82,143 @@ func ProcessFile(filename string, lineNum [2]int, commentChars string, modFunc f
 	return nil
 }
 
-func writeChanges(inputFile *os.File, outputFile *os.File, lineNum [2]int, commentChars string, modFunc func(string, string) string) error {
-	scanner := bufio.NewScanner(inputFile)
-	writer := bufio.NewWriter(outputFile)
-	currentLine := 1
-
-	for scanner.Scan() {
-		lineContent := scanner.Text()
-		if lineNum[0] <= currentLine && currentLine <= lineNum[1] {
-			lineContent = modFunc(lineContent, commentChars)
-		}
-
-		if _, err := writer.WriteString(lineContent + "\n"); err != nil {
+// processes input from stdin.
+func ProcessStdin(lineStr, startLabel, endLabel, lang string, modFunc func(string, string) string, dryRun bool) error {
+	var lineNum [2]int
+	if startLabel == "" && endLabel == "" {
+		startLine, endLine, err := extractLines(lineStr)
+		if err != nil {
 			return err
 		}
-
-		currentLine++
+		lineNum = [2]int{startLine, endLine}
+	}
+	commentChars, err := selectCommentChars("", lang)
+	if err != nil {
+		return err
 	}
 
-	if lineNum[1] > currentLine {
-		return errors.New("line number is out of range")
+	input := os.Stdin
+
+	if dryRun {
+		return printChanges(input, lineNum, startLabel, endLabel, commentChars, modFunc)
+	}
+
+	// Process input from stdin directly
+	scanner := bufio.NewScanner(input)
+	currentLine := 1
+	inSection := false
+	for scanner.Scan() {
+		lineContent := scanner.Text()
+
+		// Determine if we are processing based on line numbers or labels
+		if startLabel != "" && endLabel != "" {
+			if strings.Contains(lineContent, startLabel) {
+				inSection = true
+			}
+			if inSection {
+				lineContent = modFunc(lineContent, commentChars)
+			}
+			if strings.Contains(lineContent, endLabel) {
+				inSection = false
+			}
+		} else {
+			if lineNum[0] <= currentLine && currentLine <= lineNum[1] {
+				lineContent = modFunc(lineContent, commentChars)
+			}
+		}
+
+		// Print the modified line to stdout
+		fmt.Println(lineContent)
+		currentLine++
 	}
 
 	if err := scanner.Err(); err != nil {
 		return err
 	}
 
-	return writer.Flush()
+	return nil
 }
 
-func printChanges(inputFile *os.File, lineNum [2]int, commentChars string, modFunc func(string, string) string) error {
+func writeChanges(inputFile *os.File, outputFile *os.File, lineNum [2]int, startLabel, endLabel string, commentChars string, modFunc func(string, string) string) error {
 	scanner := bufio.NewScanner(inputFile)
+	writer := bufio.NewWriter(outputFile)
 	currentLine := 1
+	inSection := false
+	var err error
 
 	for scanner.Scan() {
 		lineContent := scanner.Text()
-		if lineNum[0] <= currentLine && currentLine <= lineNum[1] {
-			modified := modFunc(lineContent, commentChars)
-			fmt.Printf("%d: %s -> %s\n", currentLine, lineContent, modified)
+		if startLabel != "" && endLabel != "" {
+			if strings.Contains(lineContent, startLabel) {
+				inSection = true
+			}
+			if inSection {
+				lineContent = modFunc(lineContent, commentChars)
+			}
+			if strings.Contains(lineContent, endLabel) {
+				inSection = false
+			}
+		} else {
+			if lineNum[0] <= currentLine && currentLine <= lineNum[1] {
+				lineContent = modFunc(lineContent, commentChars)
+			}
+		}
+
+		if _, err = writer.WriteString(lineContent + "\n"); err != nil {
+			return err
 		}
 
 		currentLine++
 	}
 
-	if lineNum[1] > currentLine {
+	if lineNum[1] > currentLine && startLabel == "" && endLabel == "" {
+		return errors.New("line number is out of range")
+	}
+
+	if err = scanner.Err(); err != nil {
+		return err
+	}
+
+	return writer.Flush()
+}
+
+func printChanges(inputFile *os.File, lineNum [2]int, startLabel, endLabel, commentChars string, modFunc func(string, string) string) error {
+	scanner := bufio.NewScanner(inputFile)
+	currentLine := 1
+	inSection := false
+
+	for scanner.Scan() {
+		lineContent := scanner.Text()
+
+		// Determine if we are processing based on line numbers or labels
+		if startLabel != "" && endLabel != "" {
+			if strings.Contains(lineContent, startLabel) {
+				inSection = true
+			}
+			if inSection {
+				modified := modFunc(lineContent, commentChars)
+				fmt.Printf("%d: %s -> %s\n", currentLine, lineContent, modified)
+			}
+			if strings.Contains(lineContent, endLabel) {
+				inSection = false
+			}
+		} else {
+			if lineNum[0] <= currentLine && currentLine <= lineNum[1] {
+				modified := modFunc(lineContent, commentChars)
+				fmt.Printf("%d: %s -> %s\n", currentLine, lineContent, modified)
+			}
+		}
+
+		currentLine++
+	}
+
+	if lineNum[1] > currentLine && startLabel == "" && endLabel == "" {
 		return errors.New("line number is out of range")
 	}
 
 	return scanner.Err()
 }
+
 func createBackup(filename, backupFilename string) error {
 	inputFile, err := os.Open(filename)
 	if err != nil {
@@ -160,19 +248,22 @@ func restoreBackup(filename, backupFilename string) {
 }
 
 // ProcessSingleFile processes a single file specified by filename.
-func ProcessSingleFile(filename string, lineStr string, modFunc func(string, string) string, dryRun bool) error {
-	startLine, endLine, err := extractLines(lineStr)
-	if err != nil {
-		return err
-	}
-	lineNum := [2]int{startLine, endLine}
-
-	commentChars, err := selectCommentChars(filename)
+func ProcessSingleFile(filename string, lineStr, startLabel, endLabel string, modFunc func(string, string) string, dryRun bool) error {
+	commentChars, err := selectCommentChars(filename, "")
 	if err != nil {
 		return err
 	}
 
-	return ProcessFile(filename, lineNum, commentChars, modFunc, dryRun)
+	var lineNum [2]int
+	if startLabel == "" && endLabel == "" {
+		startLine, endLine, err := extractLines(lineStr)
+		if err != nil {
+			return err
+		}
+		lineNum = [2]int{startLine, endLine}
+	}
+
+	return ProcessFile(filename, lineNum, startLabel, endLabel, commentChars, modFunc, dryRun)
 }
 
 // ProcessMultipleFiles processes multiple files specified by comma-separated filenames.
@@ -203,12 +294,12 @@ func processFileWithLines(fileInfo string, dryRun bool) error {
 	}
 	lineNum := [2]int{startLine, endLine}
 
-	commentChars, err := selectCommentChars(file)
+	commentChars, err := selectCommentChars(file, "")
 	if err != nil {
 		return err
 	}
 
-	return ProcessFile(file, lineNum, commentChars, comment.ToggleComments, dryRun)
+	return ProcessFile(file, lineNum, "", "", commentChars, comment.ToggleComments, dryRun)
 }
 
 func extractLines(lineStr string) (startLine, endLine int, err error) {
@@ -235,62 +326,73 @@ func extractLines(lineStr string) (startLine, endLine int, err error) {
 	return
 }
 
-func selectCommentChars(filename string) (string, error) {
-	extension := filepath.Ext(filename)
-	var commentChars string
-	switch extension {
-	case ".go":
-		commentChars = language.CommentChars["GoLang"]
-	case ".js":
-		commentChars = language.CommentChars["JS"]
-	case ".sh", ".bash":
-		commentChars = language.CommentChars["Bash"]
-	case ".cpp", ".cc", ".h", ".c":
-		commentChars = language.CommentChars["C++/C"]
-	case ".java":
-		commentChars = language.CommentChars["Java"]
-	case ".py":
-		commentChars = language.CommentChars["Pyhton"]
-	case ".rb":
-		commentChars = language.CommentChars["Ruby"]
-	case ".pl":
-		commentChars = language.CommentChars["Perl"]
-	case ".php":
-		commentChars = language.CommentChars["PHP"]
-	case ".swift":
-		commentChars = language.CommentChars["swift"]
-	case ".kt", ".kts":
-		commentChars = language.CommentChars["Kotlin"]
-	case ".R":
-		commentChars = language.CommentChars["R"]
-	case ".hs":
-		commentChars = language.CommentChars["Haskell"]
-	case ".sql":
-		commentChars = language.CommentChars["SQL"]
-	case ".rs":
-		commentChars = language.CommentChars["Rust"]
-	case ".scala":
-		commentChars = language.CommentChars["Scala"]
-	case ".dart":
-		commentChars = language.CommentChars["Dart"]
-	case ".mm":
-		commentChars = language.CommentChars["Objective-C"]
-	case ".m":
-		commentChars = language.CommentChars["MATLAB"]
-	case ".lua":
-		commentChars = language.CommentChars["Lua"]
-	case ".erl":
-		commentChars = language.CommentChars["Erlang"]
-	case ".ex", ".exs":
-		commentChars = language.CommentChars["Elixir"]
-	case ".ts":
-		commentChars = language.CommentChars["TS"]
-	case ".vhdl", ".vhd":
-		commentChars = language.CommentChars["VHDL"]
-	case ".v", ".sv":
-		commentChars = language.CommentChars["Verilog"]
-	default:
-		return "", fmt.Errorf("unsupported file extension: %s", extension)
+func selectCommentChars(filename, lang string) (string, error) {
+	if lang != "" {
+		lang = strings.ToLower(lang)
+		commentChars, ok := language.CommentChars[lang]
+		if !ok {
+			return "", fmt.Errorf("unsupported language: %s", lang)
+		}
+		return commentChars, nil
 	}
-	return commentChars, nil
+
+	if filename != "" {
+		extension := filepath.Ext(filename)
+		switch extension {
+		case ".go":
+			return language.CommentChars["golang"], nil
+		case ".js":
+			return language.CommentChars["js"], nil
+		case ".sh", ".bash":
+			return language.CommentChars["bash"], nil
+		case ".cpp", ".cc", ".h", ".c":
+			return language.CommentChars["C"], nil
+		case ".java":
+			return language.CommentChars["java"], nil
+		case ".py":
+			return language.CommentChars["python"], nil
+		case ".rb":
+			return language.CommentChars["ruby"], nil
+		case ".pl":
+			return language.CommentChars["perl"], nil
+		case ".php":
+			return language.CommentChars["php"], nil
+		case ".swift":
+			return language.CommentChars["swift"], nil
+		case ".kt", ".kts":
+			return language.CommentChars["kotlin"], nil
+		case ".R":
+			return language.CommentChars["r"], nil
+		case ".hs":
+			return language.CommentChars["haskell"], nil
+		case ".sql":
+			return language.CommentChars["sql"], nil
+		case ".rs":
+			return language.CommentChars["rust"], nil
+		case ".scala":
+			return language.CommentChars["scala"], nil
+		case ".dart":
+			return language.CommentChars["dart"], nil
+		case ".mm":
+			return language.CommentChars["objective-c"], nil
+		case ".m":
+			return language.CommentChars["matlab"], nil
+		case ".lua":
+			return language.CommentChars["lua"], nil
+		case ".erl":
+			return language.CommentChars["erlang"], nil
+		case ".ex", ".exs":
+			return language.CommentChars["elixir"], nil
+		case ".ts":
+			return language.CommentChars["ts"], nil
+		case ".vhdl", ".vhd":
+			return language.CommentChars["vhdl"], nil
+		case ".v", ".sv":
+			return language.CommentChars["verilog"], nil
+		default:
+			return "", fmt.Errorf("unsupported file extension: %s", extension)
+		}
+	}
+
+	return "", fmt.Errorf("language not specified and no filename provided")
 }
