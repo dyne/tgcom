@@ -98,15 +98,16 @@ func writeChanges(inputFile *os.File, outputFile *os.File, lineNum [2]int, start
 	for scanner.Scan() {
 		lineContent := scanner.Text()
 
-		if strings.Contains(lineContent, startLabel) {
-			inSection = true
+		if strings.Contains(lineContent, endLabel) {
+			inSection = false
 		}
 
 		if shouldProcessLine(currentLine, lineNum, startLabel, endLabel, inSection) {
 			lineContent = modFunc(lineContent, commentChars)
 		}
-		if strings.Contains(lineContent, endLabel) {
-			inSection = false
+
+		if strings.Contains(lineContent, startLabel) {
+			inSection = true
 		}
 
 		if _, err = writer.WriteString(lineContent + "\n"); err != nil {
@@ -135,16 +136,18 @@ func printChanges(inputFile *os.File, lineNum [2]int, startLabel, endLabel, comm
 	for scanner.Scan() {
 
 		lineContent := scanner.Text()
-		if strings.Contains(lineContent, startLabel) {
-			inSection = true
+		
+		if strings.Contains(lineContent, endLabel) {
+			inSection = false
 		}
 
 		if shouldProcessLine(currentLine, lineNum, startLabel, endLabel, inSection) {
 			modified := modFunc(lineContent, commentChars)
 			fmt.Printf("%d: %s -> %s\n", currentLine, lineContent, modified)
 		}
-		if strings.Contains(lineContent, endLabel) {
-			inSection = false
+
+		if strings.Contains(lineContent, startLabel) {
+			inSection = true
 		}
 
 		currentLine++
