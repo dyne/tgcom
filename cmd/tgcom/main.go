@@ -20,7 +20,6 @@ func main() {
 	filename := *fileFlag
 	lineStr := *lineFlag
 	action := *actionFlag
-	// helpFlag := *helpFlag
 	dryRun := *dryRunFlag
 	var modFunc func(string, string) string
 
