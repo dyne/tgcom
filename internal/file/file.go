@@ -289,6 +289,8 @@ func selectCommentChars(filename string) (string, error) {
 		commentChars = language.CommentChars["VHDL"]
 	case ".v", ".sv":
 		commentChars = language.CommentChars["Verilog"]
+	case ".html":
+		commentChars = language.CommentChars["HTML"]
 	default:
 		return "", fmt.Errorf("unsupported file extension: %s", extension)
 	}
