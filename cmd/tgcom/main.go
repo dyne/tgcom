@@ -58,10 +58,6 @@ func main() {
 	}
 
 	if startLabel != "" && lineStr != "" {
-		fmt.Println("Error: only  line OR label flags are allowed not both")
-	}
-
-	if startLabel != "" && lineStr != "" {
 		fmt.Println("Error: Specify either line number/range OR label, not both.")
 		return
 	}
