@@ -7,7 +7,7 @@ import (
 // Comment adds comments to the specified content based on comment characters.
 func Comment(line string, commentChars string) string {
 	// just for html
-	if commentChars == "<!---->" {
+	if commentChars == "<!-- -->" {
 		return "<!--" + " " + line + " " + "-->"
 	}
 	return commentChars + " " + line
@@ -18,20 +18,18 @@ func Uncomment(line string, commentChars string) string {
 	trimmedLine := strings.TrimSpace(line)
 
 	//just for html
-	if commentChars == "<!---->" {
+	if commentChars == "<!-- -->" {
 		if strings.HasPrefix(trimmedLine, "<!--") && strings.HasSuffix(trimmedLine, "-->") {
 			// Check for both `<!--` and `<!-- ` prefixes.
-			if strings.HasPrefix(trimmedLine, "<!--" + " ") {
-				line = strings.Replace(line, "<!--" + " ", "", 1)
-			} else { 
-			line = strings.Replace(line, "<!--", "", 1)
+			if strings.HasPrefix(trimmedLine, "<!--"+" ") {
+				line = strings.Replace(line, "<!-- ", "", 1)
+				line = strings.Replace(line, "<!--", "", 1)
 			}
 
 			// Check for both '-->' and ' -->' suffixes
-			if strings.HasSuffix(trimmedLine, " " + "-->") {
-				line = strings.Replace(line, " " + "-->", "", 1)
-			} else {  
-			line = strings.Replace(line, "-->", "", 1)
+			if strings.HasSuffix(trimmedLine, " "+"-->") {
+				line = strings.Replace(line, " "+"-->", "", 1)
+				line = strings.Replace(line, "-->", "", 1)
 			}
 
 			return line
@@ -40,8 +38,8 @@ func Uncomment(line string, commentChars string) string {
 
 	if strings.HasPrefix(trimmedLine, commentChars) {
 		// Check for both `//` and `// ` prefixes.
-		if strings.HasPrefix(trimmedLine, commentChars + " ") {
-			return strings.Replace(line, commentChars + " ", "", 1)
+		if strings.HasPrefix(trimmedLine, commentChars+" ") {
+			return strings.Replace(line, commentChars+" ", "", 1)
 		}
 		return strings.Replace(line, commentChars, "", 1)
 	}
@@ -52,17 +50,15 @@ func Uncomment(line string, commentChars string) string {
 func ToggleComments(line string, commentChars string) string {
 	trimmedLine := strings.TrimSpace(line)
 	//just for html
-	if commentChars == "<!---->"{
+	if commentChars == "<!-- -->" {
 		if strings.HasPrefix(trimmedLine, "<!--") && strings.HasSuffix(trimmedLine, "-->") {
 			return Uncomment(line, commentChars)
-		} else {
-			return Comment(line, commentChars)
 		}
+		return Comment(line, commentChars)
 	}
 
 	if strings.HasPrefix(trimmedLine, commentChars) {
 		return Uncomment(line, commentChars)
-	} else {
-		return Comment(line, commentChars)
 	}
+	return Comment(line, commentChars)
 }
