@@ -250,7 +250,7 @@ func selectCommentChars(filename string) (string, error) {
 	case ".java":
 		commentChars = language.CommentChars["Java"]
 	case ".py":
-		commentChars = language.CommentChars["Pyhton"]
+		commentChars = language.CommentChars["Python"]
 	case ".rb":
 		commentChars = language.CommentChars["Ruby"]
 	case ".pl":
