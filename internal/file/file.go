@@ -189,14 +189,14 @@ func restoreBackup(filename, backupFilename string) {
 func ProcessSingleFile(filename string, lineStr, startLabel, endLabel string, modFunc func(string, string) string, dryRun bool) error {
 	commentChars, err := selectCommentChars(filename)
 	if err != nil {
-		return err
+		return fmt.Errorf("error selecting comment characters: %w", err)
 	}
 
 	var lineNum [2]int
 	if startLabel == "" && endLabel == "" {
 		startLine, endLine, err := extractLines(lineStr)
 		if err != nil {
-			return err
+			return fmt.Errorf("error extracting line numbers: %w", err)
 		}
 		lineNum = [2]int{startLine, endLine}
 	}
@@ -228,13 +228,13 @@ func processFileWithLines(fileInfo string, dryRun bool) error {
 	file, lineString := sub[0], sub[1]
 	startLine, endLine, err := extractLines(lineString)
 	if err != nil {
-		return err
+		return fmt.Errorf("error extracting line numbers: %w", err)
 	}
 	lineNum := [2]int{startLine, endLine}
 
 	commentChars, err := selectCommentChars(file)
 	if err != nil {
-		return err
+		return fmt.Errorf("error selecting comment characters: %w", err)
 	}
 
 	return ProcessFile(file, lineNum, "", "", commentChars, comment.ToggleComments, dryRun)
