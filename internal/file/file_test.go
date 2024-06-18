@@ -22,7 +22,7 @@ func TestProcessFile(t *testing.T) {
 		defer cleanup()
 
 		lineNum := [2]int{2, 2}
-		if err := ProcessFile(tmpFile.Name(), lineNum, commentChars, modFunc, dryRun); err != nil {
+		if err := ProcessFile(tmpFile.Name(), lineNum, "", "", commentChars, modFunc, dryRun); err != nil {
 			t.Fatalf("ProcessFile failed: %v", err)
 		}
 
@@ -33,7 +33,7 @@ func TestProcessFile(t *testing.T) {
 	t.Run("NonExistingFile", func(t *testing.T) {
 		nonExistingFile := "non_existing_file.txt"
 		lineNum := [2]int{2, 2}
-		err := ProcessFile(nonExistingFile, lineNum, commentChars, modFunc, dryRun)
+		err := ProcessFile(nonExistingFile, lineNum, "", "", commentChars, modFunc, dryRun)
 		if err == nil {
 			t.Fatalf("Expected error for non-existing file, got nil")
 		}
@@ -44,7 +44,7 @@ func TestProcessFile(t *testing.T) {
 		defer cleanup()
 
 		lineNum := [2]int{2, 2}
-		err := ProcessFile(emptyFile.Name(), lineNum, commentChars, modFunc, dryRun)
+		err := ProcessFile(emptyFile.Name(), lineNum, "", "", commentChars, modFunc, dryRun)
 		if err == nil {
 			t.Fatalf("Expected error for empty file, got nil")
 		}
@@ -56,7 +56,7 @@ func TestProcessFile(t *testing.T) {
 		defer cleanup()
 
 		lineNum := [2]int{1, 3}
-		if err := ProcessFile(tmpFile.Name(), lineNum, commentChars, comment.Comment, dryRun); err != nil {
+		if err := ProcessFile(tmpFile.Name(), lineNum, "", "", commentChars, comment.Comment, dryRun); err != nil {
 			t.Fatalf("ProcessFile failed: %v", err)
 		}
 
@@ -71,7 +71,7 @@ func TestProcessFile(t *testing.T) {
 		}
 
 		lineNum := [2]int{3, 10}
-		if err := ProcessFile(tmpFile.Name(), lineNum, commentChars, modFunc, dryRun); err == nil {
+		if err := ProcessFile(tmpFile.Name(), lineNum, "", "", commentChars, modFunc, dryRun); err == nil {
 			t.Fatal("Expected error, got nil")
 		}
 
@@ -99,7 +99,7 @@ func TestProcessFile(t *testing.T) {
 		r, w, _ := os.Pipe()
 		os.Stdout = w
 
-		if err := ProcessFile(tmpFile.Name(), lineNum, commentChars, modFunc, dryRun); err != nil {
+		if err := ProcessFile(tmpFile.Name(), lineNum, "", "", commentChars, modFunc, dryRun); err != nil {
 			t.Fatalf("ProcessFile failed: %v", err)
 		}
 
@@ -111,10 +111,23 @@ func TestProcessFile(t *testing.T) {
 		os.Stdout = old
 
 		got := buf.String()
-		expected := "2: Line 2 -> +++ Line 2"
+		expected := "2: Line 2 -> +++ Line 2\n"
 		if got != expected {
 			t.Errorf("Dry run log does not match.\nExpected: %s\nGot: %s", expected, got)
 		}
+	})
+	t.Run("Labels", func(t *testing.T) {
+		tmpFile, cleanup := createTempFile(t, "Line 0\nStart Label\nLine 1\nLine 2\nLine 3\nEnd Label\nLine 5")
+		defer cleanup()
+
+		startLabel := "Start Label"
+		endLabel := "End Label"
+		if err := ProcessFile(tmpFile.Name(), [2]int{}, startLabel, endLabel, commentChars, modFunc, dryRun); err != nil {
+			t.Fatalf("ProcessFile failed: %v", err)
+		}
+
+		expected := "Line 0\nStart Label\n+++ Line 1\n+++ Line 2\n+++ Line 3\nEnd Label\nLine 5\n"
+		assertFileContent(t, tmpFile.Name(), expected)
 	})
 }
 
@@ -164,7 +177,7 @@ line 12
 			return commentChars + " " + line
 		}
 
-		err := ProcessSingleFile(tt.filename, tt.lines, modFunc, dryRun)
+		err := ProcessSingleFile(tt.filename, tt.lines, "", "", modFunc, dryRun)
 		if (err != nil) != tt.shouldErr {
 			t.Errorf("ProcessSingleFile(%s, %s) error = %v", tt.filename, tt.lines, err)
 		}

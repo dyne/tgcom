@@ -15,7 +15,7 @@ import (
 )
 
 // ProcessFile processes a single file.
-func ProcessFile(filename string, lineNum [2]int, commentChars string, modFunc func(string, string) string, dryRun bool) error {
+func ProcessFile(filename string, lineNum [2]int, startLabel, endLabel string, commentChars string, modFunc func(string, string) string, dryRun bool) error {
 	inputFile, err := os.Open(filename)
 	if err != nil {
 		return err
@@ -24,7 +24,7 @@ func ProcessFile(filename string, lineNum [2]int, commentChars string, modFunc f
 
 	if dryRun {
 		// Perform a dry run: print the changes instead of writing them
-		return printChanges(inputFile, lineNum, commentChars, modFunc)
+		return printChanges(inputFile, lineNum, startLabel, endLabel, commentChars, modFunc)
 	}
 
 	// Create a backup of the original file
@@ -49,7 +49,7 @@ func ProcessFile(filename string, lineNum [2]int, commentChars string, modFunc f
 		return err
 	}
 
-	err = writeChanges(inputFile, tmpFile, lineNum, commentChars, modFunc)
+	err = writeChanges(inputFile, tmpFile, lineNum, startLabel, endLabel, commentChars, modFunc)
 	if err != nil {
 		restoreBackup(filename, backupFilename)
 		tmpFile.Close()
@@ -81,56 +81,85 @@ func ProcessFile(filename string, lineNum [2]int, commentChars string, modFunc f
 
 	return nil
 }
+func shouldProcessLine(currentLine int, lineNum [2]int, startLabel, endLabel string, inSection bool) bool {
+	if startLabel != "" && endLabel != "" {
+		return inSection
+	}
+	return lineNum[0] <= currentLine && currentLine <= lineNum[1]
+}
 
-func writeChanges(inputFile *os.File, outputFile *os.File, lineNum [2]int, commentChars string, modFunc func(string, string) string) error {
+func writeChanges(inputFile *os.File, outputFile *os.File, lineNum [2]int, startLabel, endLabel string, commentChars string, modFunc func(string, string) string) error {
 	scanner := bufio.NewScanner(inputFile)
 	writer := bufio.NewWriter(outputFile)
 	currentLine := 1
+	inSection := false
+	var err error
 
 	for scanner.Scan() {
 		lineContent := scanner.Text()
-		if lineNum[0] <= currentLine && currentLine <= lineNum[1] {
+
+		if strings.Contains(lineContent, endLabel) {
+			inSection = false
+		}
+
+		if shouldProcessLine(currentLine, lineNum, startLabel, endLabel, inSection) {
 			lineContent = modFunc(lineContent, commentChars)
 		}
 
-		if _, err := writer.WriteString(lineContent + "\n"); err != nil {
+		if strings.Contains(lineContent, startLabel) {
+			inSection = true
+		}
+
+		if _, err = writer.WriteString(lineContent + "\n"); err != nil {
 			return err
 		}
 
 		currentLine++
 	}
 
-	if lineNum[1] > currentLine {
+	if lineNum[1] > currentLine && startLabel == "" && endLabel == "" {
 		return errors.New("line number is out of range")
 	}
 
-	if err := scanner.Err(); err != nil {
+	if err = scanner.Err(); err != nil {
 		return err
 	}
 
 	return writer.Flush()
 }
 
-func printChanges(inputFile *os.File, lineNum [2]int, commentChars string, modFunc func(string, string) string) error {
+func printChanges(inputFile *os.File, lineNum [2]int, startLabel, endLabel, commentChars string, modFunc func(string, string) string) error {
 	scanner := bufio.NewScanner(inputFile)
 	currentLine := 1
+	inSection := false
 
 	for scanner.Scan() {
+
 		lineContent := scanner.Text()
-		if lineNum[0] <= currentLine && currentLine <= lineNum[1] {
+		
+		if strings.Contains(lineContent, endLabel) {
+			inSection = false
+		}
+
+		if shouldProcessLine(currentLine, lineNum, startLabel, endLabel, inSection) {
 			modified := modFunc(lineContent, commentChars)
 			fmt.Printf("%d: %s -> %s\n", currentLine, lineContent, modified)
+		}
+
+		if strings.Contains(lineContent, startLabel) {
+			inSection = true
 		}
 
 		currentLine++
 	}
 
-	if lineNum[1] > currentLine {
+	if lineNum[1] > currentLine && startLabel == "" && endLabel == "" {
 		return errors.New("line number is out of range")
 	}
 
 	return scanner.Err()
 }
+
 func createBackup(filename, backupFilename string) error {
 	inputFile, err := os.Open(filename)
 	if err != nil {
@@ -160,19 +189,22 @@ func restoreBackup(filename, backupFilename string) {
 }
 
 // ProcessSingleFile processes a single file specified by filename.
-func ProcessSingleFile(filename string, lineStr string, modFunc func(string, string) string, dryRun bool) error {
-	startLine, endLine, err := extractLines(lineStr)
-	if err != nil {
-		return err
-	}
-	lineNum := [2]int{startLine, endLine}
-
+func ProcessSingleFile(filename string, lineStr, startLabel, endLabel string, modFunc func(string, string) string, dryRun bool) error {
 	commentChars, err := selectCommentChars(filename)
 	if err != nil {
-		return err
+		return fmt.Errorf("error selecting comment characters: %w", err)
 	}
 
-	return ProcessFile(filename, lineNum, commentChars, modFunc, dryRun)
+	var lineNum [2]int
+	if startLabel == "" && endLabel == "" {
+		startLine, endLine, err := extractLines(lineStr)
+		if err != nil {
+			return fmt.Errorf("error extracting line numbers: %w", err)
+		}
+		lineNum = [2]int{startLine, endLine}
+	}
+
+	return ProcessFile(filename, lineNum, startLabel, endLabel, commentChars, modFunc, dryRun)
 }
 
 // ProcessMultipleFiles processes multiple files specified by comma-separated filenames.
@@ -199,16 +231,16 @@ func processFileWithLines(fileInfo string, dryRun bool) error {
 	file, lineString := sub[0], sub[1]
 	startLine, endLine, err := extractLines(lineString)
 	if err != nil {
-		return err
+		return fmt.Errorf("error extracting line numbers: %w", err)
 	}
 	lineNum := [2]int{startLine, endLine}
 
 	commentChars, err := selectCommentChars(file)
 	if err != nil {
-		return err
+		return fmt.Errorf("error selecting comment characters: %w", err)
 	}
 
-	return ProcessFile(file, lineNum, commentChars, comment.ToggleComments, dryRun)
+	return ProcessFile(file, lineNum, "", "", commentChars, comment.ToggleComments, dryRun)
 }
 
 func extractLines(lineStr string) (startLine, endLine int, err error) {
