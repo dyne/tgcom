@@ -90,7 +90,9 @@ func ReadFlags(cmd *cobra.Command) {
 			fileInfo := strings.Split(FileToRead, ",")
 			for i := 0; i < len(fileInfo); i++ {
 				inputFlag.Filename = fileInfo[i]
-				modfile.ChangeFile(inputFlag)
+				if err := modfile.ChangeFile(inputFlag); err != nil {
+					log.Fatal(err)
+				}
 			}
 		} else {
 			fileInfo := strings.Split(FileToRead, ",")
@@ -102,7 +104,10 @@ func ReadFlags(cmd *cobra.Command) {
 					}
 					inputFlag.Filename = parts[0]
 					inputFlag.LineNum = parts[1]
-					modfile.ChangeFile(inputFlag)
+					if err := modfile.ChangeFile(inputFlag); err != nil {
+						log.Fatal(err)
+					}
+
 				} else {
 					log.Fatalf("invalid syntax. Use 'File:lines'")
 				}
@@ -111,7 +116,9 @@ func ReadFlags(cmd *cobra.Command) {
 	} else {
 		if cmd.Flags().Changed("line") || cmd.Flags().Changed("start-label") && cmd.Flags().Changed("end-label") {
 			inputFlag.Filename = FileToRead
-			modfile.ChangeFile(inputFlag)
+			if err := modfile.ChangeFile(inputFlag); err != nil {
+				log.Fatal(err)
+			}
 		} else {
 			log.Fatalf("Not specified what you want to modify: add -l flag or -s and -e flags")
 		}

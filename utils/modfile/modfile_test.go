@@ -199,7 +199,11 @@ func TestChangeFile(t *testing.T) {
 			Action:     "comment",
 			DryRun:     dryRun,
 		}
-		ChangeFile(conf)
+		err := ChangeFile(conf)
+
+		if err != nil {
+			t.Errorf("No error expected got: %s", err)
+		}
 
 		expected := "Line 1\n// Line 2\nLine 3\nLine 4\n"
 		assertFileContent(t, tmpFile.Name(), expected)
@@ -218,7 +222,11 @@ func TestChangeFile(t *testing.T) {
 			Action:     "comment",
 			DryRun:     dryRun,
 		}
-		ChangeFile(conf)
+		err := ChangeFile(conf)
+
+		if err != nil {
+			t.Errorf("No error expected got: %s", err)
+		}
 
 		expected := "Line 1\n// Line 2\n// Line 3\nLine 4\n"
 		assertFileContent(t, tmpFile.Name(), expected)
@@ -237,7 +245,11 @@ func TestChangeFile(t *testing.T) {
 			Action:     "comment",
 			DryRun:     dryRun,
 		}
-		ChangeFile(conf)
+		err := ChangeFile(conf)
+
+		if err != nil {
+			t.Errorf("No error expected got: %s", err)
+		}
 
 		expected := "Start Label\n// Line 1\n// Line 2\n// Line 3\nEnd Label\n"
 		assertFileContent(t, tmpFile.Name(), expected)
@@ -262,7 +274,11 @@ func TestChangeFile(t *testing.T) {
 		r, w, _ := os.Pipe()
 		os.Stdout = w
 
-		ChangeFile(conf)
+		err := ChangeFile(conf)
+
+		if err != nil {
+			t.Errorf("No error expected got: %s", err)
+		}
 
 		// Capture the output
 		w.Close()
@@ -309,7 +325,11 @@ func TestChangeFile(t *testing.T) {
 		os.Stdin = rStdin
 		os.Stdout = wStdout
 
-		ChangeFile(conf)
+		err := ChangeFile(conf)
+
+		if err != nil {
+			t.Errorf("No error expected got: %s", err)
+		}
 
 		wStdout.Close()
 		var buf bytes.Buffer

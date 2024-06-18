@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -43,7 +42,7 @@ func setModFunc(action string) (func(string, string) string, error) {
 }
 
 // This function process the input
-func ChangeFile(conf Config) {
+func ChangeFile(conf Config) error {
 	var file *os.File
 	var err error
 	var isStdin bool
@@ -56,42 +55,42 @@ func ChangeFile(conf Config) {
 		// Open the file
 		file, err = os.Open(conf.Filename)
 		if err != nil {
-			log.Fatalf("failed to open file: %s", err)
+			return err
 		}
 		defer file.Close()
 	}
 
 	char, err := selectCommentChars(conf.Filename, conf.Lang)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	modFunc, err := setModFunc(conf.Action)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	lines := [2]int{0, 0}
 	if conf.LineNum != "" {
 		lines, err = findLines(conf.LineNum)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 	}
 	if conf.DryRun {
 		err := printChanges(file, lines, conf.StartLabel, conf.EndLabel, char, modFunc)
 		if err != nil {
-			log.Fatalf("failed to process the file: %s", err)
+			return fmt.Errorf("failed to process the file: %s", err)
 		}
 	} else {
 		if isStdin {
 			err := printOutput(file, lines, conf.StartLabel, conf.EndLabel, char, modFunc)
 			if err != nil {
-				log.Fatalf("failed to process the file: %s", err)
+				return fmt.Errorf("failed to process the file: %s", err)
 			}
 		} else {
 			// Create a backup of the original file
 			backupFilename := conf.Filename + ".bak"
 			if err := createBackup(conf.Filename, backupFilename); err != nil {
-				log.Fatal(err)
+				return err
 			}
 
 			// Create a temporary file
@@ -99,7 +98,7 @@ func ChangeFile(conf Config) {
 			tmpFile, err := os.Create(tmpFilename)
 			if err != nil {
 				restoreBackup(conf.Filename, backupFilename)
-				log.Fatalf("Errore: %v", err)
+				return err
 			}
 			defer tmpFile.Close()
 
@@ -108,7 +107,7 @@ func ChangeFile(conf Config) {
 				restoreBackup(conf.Filename, backupFilename)
 				tmpFile.Close()
 				os.Remove(tmpFilename)
-				log.Fatalf("Errore: %v", err)
+				return err
 			}
 
 			err = writeChanges(file, tmpFile, lines, conf.StartLabel, conf.EndLabel, char, modFunc)
@@ -116,32 +115,33 @@ func ChangeFile(conf Config) {
 				restoreBackup(conf.Filename, backupFilename)
 				tmpFile.Close()
 				os.Remove(tmpFilename)
-				log.Fatalf("Errore: %v", err)
+				return err
 			}
 
 			if err := file.Close(); err != nil {
 				restoreBackup(conf.Filename, backupFilename)
 				tmpFile.Close()
 				os.Remove(tmpFilename)
-				log.Fatalf("Errore: %v", err)
+				return err
 			}
 
 			// Close the temporary file before renaming
 			if err := tmpFile.Close(); err != nil {
 				os.Remove(tmpFilename)
-				log.Fatalf("Errore: %v", err)
+				return err
 			}
 
 			// Rename temporary file to original file
 			if err := os.Rename(tmpFilename, conf.Filename); err != nil {
 				restoreBackup(conf.Filename, backupFilename)
-				log.Fatalf("Errore: %v", err)
+				return err
 			}
 
 			// Remove backup file after successful processing
 			os.Remove(backupFilename)
 		}
 	}
+	return nil
 }
 
 func shouldProcessLine(currentLine int, lineNum [2]int, startLabel, endLabel string, inSection bool) bool {
