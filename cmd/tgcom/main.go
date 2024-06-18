@@ -14,6 +14,8 @@ import (
 func main() {
 	fileFlag := flag.String("file", "", "The file to process")
 	lineFlag := flag.String("line", "", "The line number or range to modify (e.g., 4 or 10-20)")
+	startLabelFlag := flag.String("start-label", "", "The start label for a section")
+	endLabelFlag := flag.String("end-label", "", "The end label for a section")
 	actionFlag := flag.String("action", "", "can be comment, uncomment or toggle")
 	startLabelFlag := flag.String("start-label", "", "The start label for a section")
 	endLabelFlag := flag.String("end-label", "", "The end label for a section")
@@ -92,3 +94,4 @@ func main() {
 		}
 	}
 }
+

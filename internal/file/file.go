@@ -81,6 +81,13 @@ func ProcessFile(filename string, lineNum [2]int, startLabel, endLabel string, c
 
 	return nil
 }
+func shouldProcessLine(currentLine int, lineNum [2]int, startLabel, endLabel string, inSection bool) bool {
+	if startLabel != "" && endLabel != "" {
+		return inSection
+	}
+	return lineNum[0] <= currentLine && currentLine <= lineNum[1]
+}
+
 
 // processes input from stdin.
 func ProcessStdin(lineStr, startLabel, endLabel, lang string, modFunc func(string, string) string, dryRun bool) error {
@@ -148,20 +155,17 @@ func writeChanges(inputFile *os.File, outputFile *os.File, lineNum [2]int, start
 
 	for scanner.Scan() {
 		lineContent := scanner.Text()
-		if startLabel != "" && endLabel != "" {
-			if strings.Contains(lineContent, startLabel) {
-				inSection = true
-			}
-			if inSection {
-				lineContent = modFunc(lineContent, commentChars)
-			}
-			if strings.Contains(lineContent, endLabel) {
-				inSection = false
-			}
-		} else {
-			if lineNum[0] <= currentLine && currentLine <= lineNum[1] {
-				lineContent = modFunc(lineContent, commentChars)
-			}
+
+		if strings.Contains(lineContent, endLabel) {
+			inSection = false
+		}
+
+		if shouldProcessLine(currentLine, lineNum, startLabel, endLabel, inSection) {
+			lineContent = modFunc(lineContent, commentChars)
+		}
+
+		if strings.Contains(lineContent, startLabel) {
+			inSection = true
 		}
 
 		if _, err = writer.WriteString(lineContent + "\n"); err != nil {
@@ -188,25 +192,20 @@ func printChanges(inputFile *os.File, lineNum [2]int, startLabel, endLabel, comm
 	inSection := false
 
 	for scanner.Scan() {
+
 		lineContent := scanner.Text()
 
-		// Determine if we are processing based on line numbers or labels
-		if startLabel != "" && endLabel != "" {
-			if strings.Contains(lineContent, startLabel) {
-				inSection = true
-			}
-			if inSection {
-				modified := modFunc(lineContent, commentChars)
-				fmt.Printf("%d: %s -> %s\n", currentLine, lineContent, modified)
-			}
-			if strings.Contains(lineContent, endLabel) {
-				inSection = false
-			}
-		} else {
-			if lineNum[0] <= currentLine && currentLine <= lineNum[1] {
-				modified := modFunc(lineContent, commentChars)
-				fmt.Printf("%d: %s -> %s\n", currentLine, lineContent, modified)
-			}
+		if strings.Contains(lineContent, endLabel) {
+			inSection = false
+		}
+
+		if shouldProcessLine(currentLine, lineNum, startLabel, endLabel, inSection) {
+			modified := modFunc(lineContent, commentChars)
+			fmt.Printf("%d: %s -> %s\n", currentLine, lineContent, modified)
+		}
+
+		if strings.Contains(lineContent, startLabel) {
+			inSection = true
 		}
 
 		currentLine++
@@ -249,16 +248,18 @@ func restoreBackup(filename, backupFilename string) {
 
 // ProcessSingleFile processes a single file specified by filename.
 func ProcessSingleFile(filename string, lineStr, startLabel, endLabel string, modFunc func(string, string) string, dryRun bool) error {
+
 	commentChars, err := selectCommentChars(filename, "")
+
 	if err != nil {
-		return err
+		return fmt.Errorf("error selecting comment characters: %w", err)
 	}
 
 	var lineNum [2]int
 	if startLabel == "" && endLabel == "" {
 		startLine, endLine, err := extractLines(lineStr)
 		if err != nil {
-			return err
+			return fmt.Errorf("error extracting line numbers: %w", err)
 		}
 		lineNum = [2]int{startLine, endLine}
 	}
@@ -290,13 +291,13 @@ func processFileWithLines(fileInfo string, dryRun bool) error {
 	file, lineString := sub[0], sub[1]
 	startLine, endLine, err := extractLines(lineString)
 	if err != nil {
-		return err
+		return fmt.Errorf("error extracting line numbers: %w", err)
 	}
 	lineNum := [2]int{startLine, endLine}
 
 	commentChars, err := selectCommentChars(file, "")
 	if err != nil {
-		return err
+		return fmt.Errorf("error selecting comment characters: %w", err)
 	}
 
 	return ProcessFile(file, lineNum, "", "", commentChars, comment.ToggleComments, dryRun)

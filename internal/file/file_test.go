@@ -117,7 +117,7 @@ func TestProcessFile(t *testing.T) {
 		}
 	})
 	t.Run("Labels", func(t *testing.T) {
-		tmpFile, cleanup := createTempFile(t, "Start Label\nLine 1\nLine 2\nLine 3\nEnd Label")
+		tmpFile, cleanup := createTempFile(t, "Line 0\nStart Label\nLine 1\nLine 2\nLine 3\nEnd Label\nLine 5")
 		defer cleanup()
 
 		startLabel := "Start Label"
@@ -126,7 +126,7 @@ func TestProcessFile(t *testing.T) {
 			t.Fatalf("ProcessFile failed: %v", err)
 		}
 
-		expected := "+++ Start Label\n+++ Line 1\n+++ Line 2\n+++ Line 3\n+++ End Label\n"
+		expected := "Line 0\nStart Label\n+++ Line 1\n+++ Line 2\n+++ Line 3\nEnd Label\nLine 5"
 		assertFileContent(t, tmpFile.Name(), expected)
 	})
 }
@@ -175,6 +175,7 @@ func TestProcessStdin(t *testing.T) {
 	if got != expected {
 		t.Errorf("expected %q, got %q", expected, got)
 	}
+
 }
 
 func TestProcessSingleFile(t *testing.T) {
