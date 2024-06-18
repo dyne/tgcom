@@ -126,7 +126,7 @@ func TestProcessFile(t *testing.T) {
 			t.Fatalf("ProcessFile failed: %v", err)
 		}
 
-		expected := "Line 0\nStart Label\n+++ Line 1\n+++ Line 2\n+++ Line 3\nEnd Label\nLine 5"
+		expected := "Line 0\nStart Label\n+++ Line 1\n+++ Line 2\n+++ Line 3\nEnd Label\nLine 5\n"
 		assertFileContent(t, tmpFile.Name(), expected)
 	})
 }
