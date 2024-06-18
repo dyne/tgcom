@@ -131,6 +131,53 @@ func TestProcessFile(t *testing.T) {
 	})
 }
 
+func TestProcessStdin(t *testing.T) {
+	input := "line 1\nline 2\nline 3\nline 4\n"
+	modFunc := func(line string, commentChars string) string {
+		return commentChars + " " + line
+	}
+
+	// Create pipes for stdin and stdout redirection
+	rStdin, wStdin, _ := os.Pipe()
+	rStdout, wStdout, _ := os.Pipe()
+
+	// Write the mock input to the writer end of the stdin pipe
+	go func() {
+		defer wStdin.Close()
+		_, _ = wStdin.Write([]byte(input))
+	}()
+
+	// Save original stdin and stdout
+	oldStdin := os.Stdin
+	defer func() { os.Stdin = oldStdin }()
+	oldStdout := os.Stdout
+	defer func() { os.Stdout = oldStdout }()
+
+	// Redirect stdin and stdout
+	os.Stdin = rStdin
+	os.Stdout = wStdout
+
+	err := ProcessStdin("1-3", "", "", "go", modFunc, false)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	wStdout.Close()
+
+	// Read the captured output
+	var buf bytes.Buffer
+	io.Copy(&buf, rStdout)
+	rStdout.Close()
+
+	// Check the output
+	got := buf.String()
+	expected := "// line 1\n// line 2\n// line 3\nline 4\n"
+	if got != expected {
+		t.Errorf("expected %q, got %q", expected, got)
+	}
+
+}
+
 func TestProcessSingleFile(t *testing.T) {
 	// Setup test files with content
 	tests := []struct {
@@ -271,7 +318,7 @@ func TestSelectCommentChars(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		commentChars, err := selectCommentChars(tt.filename)
+		commentChars, err := selectCommentChars(tt.filename, "")
 		if (err != nil) != tt.shouldErr {
 			t.Errorf("selectCommentChars(%s) error = %v", tt.filename, err)
 		}
