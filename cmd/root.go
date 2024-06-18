@@ -80,19 +80,12 @@ func noFlagsGiven(cmd *cobra.Command) bool {
 	return !hasFlags
 }
 
-/* analyze the argument of -f. If more files are given (e.g -f file1:line1,file2:line2,file3:line3) then split each
-content and pass each pair of file and corresponding line to the ChangeFile() function. Otherwise pass directly content
-of -f and -l flags. */
-/* TODO: make this function more pretty */
-
+// ReadFlags parses command line flags and applies them to modify files or display information accordingly.
 func ReadFlags(cmd *cobra.Command) {
 	if strings.Contains(FileToRead, ",") {
 		if cmd.Flags().Changed("line") {
 			fmt.Println("Warning: when passed multiple file to flag -f don't use -l flag")
 		}
-		// TODO: add the possibility of adding labels (same start and same end label) for all the files
-		// two possibility: if both start and end label are given then there should be no lines, otherwise
-		// you should procede as before
 		if cmd.Flags().Changed("start-label") && cmd.Flags().Changed("end-label") {
 			fileInfo := strings.Split(FileToRead, ",")
 			for i := 0; i < len(fileInfo); i++ {
@@ -111,7 +104,6 @@ func ReadFlags(cmd *cobra.Command) {
 					inputFlag.LineNum = parts[1]
 					modfile.ChangeFile(inputFlag)
 				} else {
-					// HERE: insert code to say that is possible that start-end labels have been given
 					log.Fatalf("invalid syntax. Use 'File:lines'")
 				}
 			}

@@ -14,6 +14,7 @@ import (
 	"github.com/dyne/tgcom/utils/commenter"
 )
 
+// Config holds configuration settings for modifying files based on comments.
 type Config struct {
 	Filename   string
 	LineNum    string
@@ -24,11 +25,6 @@ type Config struct {
 	DryRun     bool
 }
 
-/*
-	phylosophy: gli input a queste funzioni devono essere tutti giusti! è nel file della flag che controlli se gli argumment delle flag sono
-
-giusti
-*/
 func setModFunc(action string) (func(string, string) string, error) {
 	switch action {
 	case "comment":
@@ -384,6 +380,7 @@ func selectCommentChars(filename, lang string) (string, error) {
 	return "", fmt.Errorf("language not specified and no filename provided")
 }
 
+// CommentChars maps programming languages to their respective comment syntax.
 var CommentChars = map[string]string{
 	"golang":      "//",
 	"go":          "//",

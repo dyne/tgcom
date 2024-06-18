@@ -2,6 +2,7 @@ package commenter
 
 import "strings"
 
+// Comment adds a comment character to the beginning of the given line.
 func Comment(line string, char string) string {
 	// just for html
 	if char == "<!-- -->" {
@@ -10,6 +11,7 @@ func Comment(line string, char string) string {
 	return char + " " + line
 }
 
+// Uncomment removes a comment character or string from the beginning of the given line, if present.
 func Uncomment(line string, char string) string {
 	trimmedLine := strings.TrimSpace(line)
 
@@ -42,6 +44,7 @@ func Uncomment(line string, char string) string {
 	return line
 }
 
+// ToggleComments toggles comments on or off for the given line based on its current state.
 func ToggleComments(line string, char string) string {
 	trimmedLine := strings.TrimSpace(line)
 
