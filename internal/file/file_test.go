@@ -17,7 +17,6 @@ func TestProcessFile(t *testing.T) {
 	modFunc := func(line string, commentChars string) string {
 		return commentChars + " " + line
 	}
-
 	t.Run("SingleLine", func(t *testing.T) {
 		tmpFile, cleanup := createTempFile(t, "Line 1\nLine 2\nLine 3\nLine 4")
 		defer cleanup()
