@@ -1,3 +1,4 @@
+//go:build !vcs
 package main
 
 import (
@@ -27,7 +28,6 @@ func main() {
 	action := *actionFlag
 	dryRun := *dryRunFlag
 	langStr := *lang
-
 	info, _ := os.Stdin.Stat()
 	isStdin := (info.Mode() & os.ModeCharDevice) == 0
 

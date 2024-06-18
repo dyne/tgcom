@@ -379,6 +379,8 @@ func selectCommentChars(filename, lang string) (string, error) {
 			return language.CommentChars["matlab"], nil
 		case ".lua":
 			return language.CommentChars["lua"], nil
+		case ".html":
+			return language.CommentChars["html"], nil
 		case ".erl":
 			return language.CommentChars["erlang"], nil
 		case ".ex", ".exs":
