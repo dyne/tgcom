@@ -1,4 +1,5 @@
 //go:build !vcs
+
 package main
 
 import (
@@ -17,8 +18,6 @@ func main() {
 	startLabelFlag := flag.String("start-label", "", "The start label for a section")
 	endLabelFlag := flag.String("end-label", "", "The end label for a section")
 	actionFlag := flag.String("action", "", "can be comment, uncomment or toggle")
-	startLabelFlag := flag.String("start-label", "", "The start label for a section")
-	endLabelFlag := flag.String("end-label", "", "The end label for a section")
 	dryRunFlag := flag.Bool("dry-run", false, "Perform a dry run without modifying the files")
 	lang := flag.String("language", "", "Specify the programming language")
 	flag.Parse()
@@ -94,4 +93,3 @@ func main() {
 		}
 	}
 }
-
