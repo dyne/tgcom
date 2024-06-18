@@ -282,7 +282,7 @@ func selectCommentChars(filename string) (string, error) {
 	case ".java":
 		commentChars = language.CommentChars["Java"]
 	case ".py":
-		commentChars = language.CommentChars["Pyhton"]
+		commentChars = language.CommentChars["Python"]
 	case ".rb":
 		commentChars = language.CommentChars["Ruby"]
 	case ".pl":
@@ -321,6 +321,8 @@ func selectCommentChars(filename string) (string, error) {
 		commentChars = language.CommentChars["VHDL"]
 	case ".v", ".sv":
 		commentChars = language.CommentChars["Verilog"]
+	case ".html":
+		commentChars = language.CommentChars["HTML"]
 	default:
 		return "", fmt.Errorf("unsupported file extension: %s", extension)
 	}

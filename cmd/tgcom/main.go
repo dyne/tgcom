@@ -1,3 +1,4 @@
+//go:build !vcs
 package main
 
 import (
@@ -76,6 +77,7 @@ func main() {
 			filename = parts[0]
 			lineStr = parts[1]
 		}
+
 		if err := file.ProcessSingleFile(filename, lineStr, startLabel, endLabel, modFunc, dryRun); err != nil {
 			fmt.Println("Error processing file:", err)
 		}
