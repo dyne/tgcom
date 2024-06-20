@@ -7,19 +7,15 @@ import (
 	"strings"
 
 	"github.com/dyne/tgcom/utils/modfile"
+	"github.com/dyne/tgcom/utils/sshutils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
-/* In these variables we store the arguments passed to flags -f, -l, -d and -a */
 var FileToRead string
 var inputFlag modfile.Config
+var sshDir string
 
-/*
-	rootCmd is the command tgcom. "Use" is the name of the command, "Short" is a brief description of the command, "Long
-
-is a longer description of the command, Run is the action that must be executed when command tgcom is called"
-*/
 var rootCmd = &cobra.Command{
 	Use:   "tgcom",
 	Short: "tgcom is tool that allows users to comment or uncomment pieces of code",
@@ -32,11 +28,17 @@ var rootCmd = &cobra.Command{
 			customUsageFunc(cmd)
 			os.Exit(1)
 		}
-		ReadFlags(cmd)
+		if sshDir != "" {
+			err := sshutils.HandleSSH(sshDir)
+			if err != nil {
+				log.Fatalf("Error handling SSH work directory: %v", err)
+			}
+		} else {
+			ReadFlags(cmd)
+		}
 	},
 }
 
-/* the one command used to run the main function (set by default by cobra-cli) */
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
@@ -44,13 +46,7 @@ func Execute() {
 	}
 }
 
-/*
-	pass in this function the flags of the command tgcom. Flags can be Persistend (so that if tgcom has a sub-command, e.g.
-
-subtgcom, the flag defined for tgcom can be used as flags of subtgcom) or local (so flags are usable only for tgcom command)
-*/
 func init() {
-
 	rootCmd.SetHelpFunc(customHelpFunc)
 	rootCmd.SetUsageFunc(customUsageFunc)
 
@@ -61,15 +57,14 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&inputFlag.StartLabel, "start-label", "s", "", "pass argument to start-label to modify lines after start-label")
 	rootCmd.PersistentFlags().StringVarP(&inputFlag.EndLabel, "end-label", "e", "", "pass argument to end-label to modify lines up to end-label")
 	rootCmd.PersistentFlags().StringVarP(&inputFlag.Lang, "language", "L", "", "pass argument to language to specify the language of the input code")
+	rootCmd.PersistentFlags().StringVarP(&sshDir, "workdir", "w", "", "SSH URL for the remote directory")
 	rootCmd.MarkFlagsRequiredTogether("start-label", "end-label")
 	rootCmd.MarkFlagsMutuallyExclusive("line", "start-label")
 	rootCmd.MarkFlagsMutuallyExclusive("line", "end-label")
-	rootCmd.MarkFlagsOneRequired("file", "language")
+	rootCmd.MarkFlagsOneRequired("file", "language", "workdir")
 	rootCmd.MarkFlagsMutuallyExclusive("file", "language")
-
 }
 
-/* function to see if no flag is given */
 func noFlagsGiven(cmd *cobra.Command) bool {
 	hasFlags := false
 	cmd.Flags().VisitAll(func(f *pflag.Flag) {
@@ -80,7 +75,6 @@ func noFlagsGiven(cmd *cobra.Command) bool {
 	return !hasFlags
 }
 
-// ReadFlags parses command line flags and applies them to modify files or display information accordingly.
 func ReadFlags(cmd *cobra.Command) {
 	if strings.Contains(FileToRead, ",") {
 		if cmd.Flags().Changed("line") {
