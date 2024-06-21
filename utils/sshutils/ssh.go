@@ -15,20 +15,21 @@ import (
 type Model struct {
 	Username  string
 	Host      string
+	Port      string
 	Directory string
 	Output    string
 	Err       error
 }
 
-func ParseSSHURL(sshURL string) (username, host, path string, err error) {
+func ParseSSHURL(sshURL string) (username, host, port, path string, err error) {
 	// Trim any leading or trailing whitespace
 	sshURL = strings.TrimSpace(sshURL)
 
 	// Split URL by '/'
 	parts := strings.Split(sshURL, "/")
 
-	// URL should have at least 4 parts (protocol, empty string, user@host, path)
-	if len(parts) < 4 {
+	// URL should have at least 3 parts (user@host, optional path)
+	if len(parts) < 3 {
 		err = fmt.Errorf("invalid SSH URL format")
 		return
 	}
@@ -41,16 +42,28 @@ func ParseSSHURL(sshURL string) (username, host, path string, err error) {
 		return
 	}
 	username = usernameHost[0]
-	host = usernameHost[1]
+	hostPort := usernameHost[1]
+
+	// Split host and port
+	if strings.Contains(hostPort, ":") {
+		parts := strings.SplitN(hostPort, ":", 2)
+		host = parts[0]
+		port = parts[1]
+	} else {
+		host = hostPort
+		port = "22" // Default port if not specified
+	}
 
 	// Construct path from remaining parts
-	path = strings.Join(parts[3:], "/")
+	if len(parts) > 3 {
+		path = strings.Join(parts[3:], "/")
+	}
 
 	return
 }
 
 func HandleSSH(sshURL string) error {
-	username, host, path, err := ParseSSHURL(sshURL)
+	username, host, port, path, err := ParseSSHURL(sshURL)
 	if err != nil {
 		return fmt.Errorf("invalid SSH URL: %w", err)
 	}
@@ -58,6 +71,7 @@ func HandleSSH(sshURL string) error {
 	p := tea.NewProgram(Model{
 		Username:  username,
 		Host:      host,
+		Port:      port,
 		Directory: path,
 	})
 
@@ -69,13 +83,13 @@ func HandleSSH(sshURL string) error {
 }
 
 func (m Model) Init() tea.Cmd {
-	return sshCmd(m.Username, m.Host, m.Directory)
+	return sshCmd(m.Username, m.Host, m.Port, m.Directory)
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case sshOutputMsg:
-		return Model{Username: m.Username, Host: m.Host, Directory: m.Directory, Output: msg.Output, Err: msg.Err}, nil
+		return Model{Username: m.Username, Host: m.Host, Port: m.Port, Directory: m.Directory, Output: msg.Output, Err: msg.Err}, nil
 	case tea.KeyMsg:
 		if msg.String() == "q" {
 			return m, tea.Quit
@@ -96,7 +110,7 @@ type sshOutputMsg struct {
 	Err    error
 }
 
-func sshCmd(username, host, directory string) tea.Cmd {
+func sshCmd(username, host, port, directory string) tea.Cmd {
 	return func() tea.Msg {
 		// Validate directory path
 		if err := validateDirectory(directory); err != nil {
@@ -121,7 +135,8 @@ func sshCmd(username, host, directory string) tea.Cmd {
 			HostKeyCallback: verifyHostKey,
 		}
 
-		client, err := ssh.Dial("tcp", host+":22", config)
+		addr := fmt.Sprintf("%s:%s", host, port)
+		client, err := ssh.Dial("tcp", addr, config)
 		if err != nil {
 			return sshOutputMsg{Err: err}
 		}
