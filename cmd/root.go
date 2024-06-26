@@ -4,38 +4,37 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/dyne/tgcom/utils/modfile"
-	"github.com/dyne/tgcom/utils/sshutils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
-var FileToRead string
-var inputFlag modfile.Config
-var sshDir string
+var (
+	FileToRead string
+	inputFlag  modfile.Config
+	remotePath string
+)
 
 var rootCmd = &cobra.Command{
 	Use:   "tgcom",
-	Short: "tgcom is tool that allows users to comment or uncomment pieces of code",
+	Short: "tgcom is a tool that allows users to comment or uncomment pieces of code",
 	Long: `tgcom is a CLI library written in Go that allows users to
-    comment or uncomment pieces of code. It supports many different
-    languages including Go, C, Java, Python, Bash, and many others...`,
-
+	comment or uncomment pieces of code. It supports many different
+	languages including Go, C, Java, Python, Bash, and many others...`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if remotePath != "" {
+			executeRemoteCommand(remotePath)
+			return
+		}
+
 		if noFlagsGiven(cmd) {
 			customUsageFunc(cmd)
 			os.Exit(1)
 		}
-		if sshDir != "" {
-			err := sshutils.HandleSSH(sshDir)
-			if err != nil {
-				log.Fatalf("Error handling SSH work directory: %v", err)
-			}
-		} else {
-			ReadFlags(cmd)
-		}
+		ReadFlags(cmd)
 	},
 }
 
@@ -57,12 +56,22 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&inputFlag.StartLabel, "start-label", "s", "", "pass argument to start-label to modify lines after start-label")
 	rootCmd.PersistentFlags().StringVarP(&inputFlag.EndLabel, "end-label", "e", "", "pass argument to end-label to modify lines up to end-label")
 	rootCmd.PersistentFlags().StringVarP(&inputFlag.Lang, "language", "L", "", "pass argument to language to specify the language of the input code")
-	rootCmd.PersistentFlags().StringVarP(&sshDir, "workdir", "w", "", "SSH URL for the remote directory")
-	rootCmd.MarkFlagsRequiredTogether("start-label", "end-label")
-	rootCmd.MarkFlagsMutuallyExclusive("line", "start-label")
-	rootCmd.MarkFlagsMutuallyExclusive("line", "end-label")
-	rootCmd.MarkFlagsOneRequired("file", "language", "workdir")
-	rootCmd.MarkFlagsMutuallyExclusive("file", "language")
+	rootCmd.PersistentFlags().StringVarP(&remotePath, "remote", "w", "", "pass remote user, host, and directory in the format user@host:/path/to/directory")
+
+	// Mark flags based on command name
+	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		if cmd.Name() != "server" {
+			cmd.MarkFlagsRequiredTogether("start-label", "end-label")
+			cmd.MarkFlagsMutuallyExclusive("line", "start-label")
+			cmd.MarkFlagsMutuallyExclusive("line", "end-label")
+			cmd.MarkFlagsOneRequired("file", "language", "remote")
+			cmd.MarkFlagsMutuallyExclusive("file", "language")
+		}
+		return nil
+	}
+
+	// Register server command
+	rootCmd.AddCommand(serverCmd)
 }
 
 func noFlagsGiven(cmd *cobra.Command) bool {
@@ -78,7 +87,7 @@ func noFlagsGiven(cmd *cobra.Command) bool {
 func ReadFlags(cmd *cobra.Command) {
 	if strings.Contains(FileToRead, ",") {
 		if cmd.Flags().Changed("line") {
-			fmt.Println("Warning: when passed multiple file to flag -f don't use -l flag")
+			fmt.Println("Warning: when passing multiple files to flag -f, don't use -l flag")
 		}
 		if cmd.Flags().Changed("start-label") && cmd.Flags().Changed("end-label") {
 			fileInfo := strings.Split(FileToRead, ",")
@@ -101,7 +110,6 @@ func ReadFlags(cmd *cobra.Command) {
 					if err := modfile.ChangeFile(inputFlag); err != nil {
 						log.Fatal(err)
 					}
-
 				} else {
 					log.Fatalf("invalid syntax. Use 'File:lines'")
 				}
@@ -116,7 +124,6 @@ func ReadFlags(cmd *cobra.Command) {
 		} else {
 			log.Fatalf("Not specified what you want to modify: add -l flag or -s and -e flags")
 		}
-
 	}
 }
 
@@ -164,4 +171,32 @@ func customUsageFunc(cmd *cobra.Command) error {
 		}
 	})
 	return nil
+}
+
+func executeRemoteCommand(remotePath string) {
+	parts := strings.SplitN(remotePath, "@", 2)
+	if len(parts) != 2 {
+		fmt.Println("Invalid format. Usage: tgcom -w user@remote:/path/folder")
+		os.Exit(1)
+	}
+
+	userHost := parts[0]
+	pathParts := strings.SplitN(parts[1], ":", 2)
+	if len(pathParts) != 2 {
+		fmt.Println("Invalid format. Usage: tgcom -w user@remote:/path/folder")
+		os.Exit(1)
+	}
+
+	host := pathParts[0]
+	dir := pathParts[1]
+
+	sshCommand := fmt.Sprintf("ssh -p 2222 %s@%s tgcom %s", userHost, host, dir)
+	cmd := exec.Command("bash", "-c", sshCommand)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		fmt.Printf("Error executing command: %v\n", err)
+		os.Exit(1)
+	}
 }
