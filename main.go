@@ -10,7 +10,7 @@ import (
 	"github.com/charmbracelet/bubbletea"
 	"github.com/dyne/tgcom/tui-tgcom/options_selector"
 	"github.com/dyne/tgcom/tui-tgcom/files_selector"
-	"github.com/dyne/tgcom/tui-tgcom/texts_selector"
+	"github.com/dyne/tgcom/tui-tgcom/text_selector"
 	"github.com/dyne/tgcom/utils/modfile" // o solo modfile
 )
 
@@ -30,11 +30,11 @@ func main() {
 	clearScreen() // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
     // initialize model for file selection
-	model1 := file_selector.InitialModel()
+	model1 := files_selector.InitialModel()
 
     // select files
 	p1, _ := tea.NewProgram(model1).Run()
-	model1 = p1.(file_selector.Model)
+	model1 = p1.(files_selector.Model)
 
     // Files []string contain the path for all the files user selects
 	Files := model1.Files_Path // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -44,7 +44,7 @@ func main() {
 
     optionsz := []string{"Fast mode", "Slow mode"}
     
-    model2 := option_selector.Model{
+    model2 := options_selector.Model{
         Options: optionsz,
     }
 
@@ -57,7 +57,7 @@ func main() {
     */
 
     p2, _ := tea.NewProgram(model2).Run()
-    model2 = p2.(option_selector.Model)
+    model2 = p2.(options_selector.Model)
 
     // Speed is the string "Fast mode o Slow mode"
     speed := model2.Selected
@@ -105,7 +105,7 @@ func main() {
 
             optionsz = []string{"toggle", "comment", "uncomment"}
     
-            model4 := option_selector.Model{
+            model4 := options_selector.Model{
                 Options: optionsz,
             }
 
@@ -118,7 +118,7 @@ func main() {
             */
 
             p4, _ = tea.NewProgram(model4).Run()
-            model4 = p4.(option_selector.Model)
+            model4 = p4.(options_selector.Model)
 
             // Speed is the string "Fast mode o Slow mode"
             Actions = append(Actions, model4.Selected) // <<<<<<<<<<<<<<<<<<<<<
