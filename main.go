@@ -182,6 +182,7 @@ func clearScreen() {
 }
 
 // extract relative path from absolute path
+// try to adapt better
 func AbsToRel(absPath string) (string, error) {
     // Get the current working directory
     currentDir, err := filepath.Abs(".")
