@@ -13,6 +13,9 @@ type Model struct {
 	cursor   int
 	Options  []string
 	Selected string
+
+	Header	string
+	Help	string
 }
 
 func (m Model) Init() tea.Cmd {
@@ -51,15 +54,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) View() string {
 	// the header
-	s := paint("silver").Render("Choose among the following Options...") + "\n\n"
+	s := m.Header
+	
 	for i := 0; i < len(m.Options); i++ {
 		cursor := " " 
 		if m.cursor == i {
 			cursor = paint("red").Render(" ➪")
 		}
 
-		s += fmt.Sprintf("%s %s\n", cursor, paint("silver").Render(m.Options[i]))
+		s += fmt.Sprintf("%s %s\n", cursor, paint("silver").Render("❒ " + m.Options[i]))
 	}
+
+	// the footer
+	s += m.Help
 	return s
 }
 

@@ -13,6 +13,9 @@ import(
 type Model struct {
 	Input string
 	flash bool
+
+	Header string
+	Help   string
 }
 
 func (m Model) Init() tea.Cmd {
@@ -30,7 +33,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			return m, tea.Quit
 		case "backspace":
-			m.Input = m.Input[:len(m.Input) - 1]
+			if len(m.Input) > 0 {
+				m.Input = m.Input[:len(m.Input) - 1]
+			}
 		default:
 			m.Input += msg.String()
 		}
@@ -41,16 +46,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
+	// flash command
 	flash := ""
 	if m.flash {
-		flash = paint("lime").Render("▎")
+		flash = paint("green").Render("▎")
 	}
 
-	s := paint("silver").Render("\n Insert start and end label, accepted format is 'start_label';'end_label'") + "\n\n"
+	// the header
+	s := m.Header
 	
-	s += paint("lime").Render(" > " + m.Input) +  flash + "\n"
+	s += paint("green").Render(" ✏ " + m.Input) +  flash + "\n"
+	
 	// The footer
-	s += paint("silver").Render("\n 'q'     to quit\n 'enter' to modify next file")
+	s += m.Help
 	return s
 }
 

@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"fmt"
 	"path/filepath"
+    "github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/bubbletea"
 	"github.com/dyne/tgcom/tui-tgcom/options_selector"
 	"github.com/dyne/tgcom/tui-tgcom/files_selector"
@@ -19,7 +20,7 @@ func main() {
 	//flags and as a tui
 	var mod int = 0
 	var num int
-	if mod == 0 {
+	if mod == 1 {
 		cmd.Execute()
 		_, err := fmt.Scanf("%d", &num)
     	if err != nil {
@@ -43,9 +44,13 @@ func main() {
     clearScreen() // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
     optionsz := []string{"Fast mode", "Slow mode"}
-    
+    header := lipgloss.NewStyle().Foreground(lipgloss.Color("#C0C0C0")).Render("Select 'Fast mode' if you want to toggle all your files by giving just indications about start label and end label.\nSelect 'Slow mode' if you want to specify what action to perform file by file.") + "\n\n"
+    help := lipgloss.NewStyle().Foreground(lipgloss.Color("#C0C0C0")).Render("\n 'q' to quit     'enter' to choose pointed option\n '↑' to go up\n '↓' to go down")
+
     model2 := options_selector.Model{
         Options: optionsz,
+        Header: header,
+        Help: help,
     }
 
     // Esegui Init
@@ -70,12 +75,19 @@ func main() {
     case "Fast mode":
         // Ask the user for the labels he wants to assign
         clearScreen() // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-        model3 := text_selector.Model{}
+
+        header = lipgloss.NewStyle().Foreground(lipgloss.Color("#C0C0C0")).Render("Type below the section to modify. You can insert your start label\nand your end label using the syntax 'start';'end'") + "\n\n"
+        help = lipgloss.NewStyle().Foreground(lipgloss.Color("#C0C0C0")).Render("\n 'q' to quit     'enter' to select the lines/labels indicated\n '↑' to go up\n '↓' to go down")
+        
+        model3 := text_selector.Model{
+            Header: header,
+            Help: help,
+        }
 
         // Esegui Init
         cmd3 := model3.Init()
         if cmd3 == nil {
-            fmt.Println("Init command not executed")
+            fmt.Println("Init command failed")
         }
 
 	    p3, _ := tea.NewProgram(model3).Run()
@@ -104,19 +116,23 @@ func main() {
             clearScreen() // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
             optionsz = []string{"toggle", "comment", "uncomment"}
-    
+            header = lipgloss.NewStyle().Foreground(lipgloss.Color("#C0C0C0")).Render("Select 'comment', 'uncomment' or 'toggle' for the file:") + "\n\n" +lipgloss.NewStyle().Foreground(lipgloss.Color("#008000")).Render(Files[i]) + "\n\n"
+            help = lipgloss.NewStyle().Foreground(lipgloss.Color("#C0C0C0")).Render("\n 'q' to quit     'enter' to modify selected files\n '↑' to go up\n '↓' to go down")
+
             model4 := options_selector.Model{
                 Options: optionsz,
+                Header: header,
+                Help: help,
             }
 
             // Esegui Init
             /*
             cmd4 := model4.Init()
             if cmd4 == nil {
-                fmt.Println("Init command not executed")
+                fmt.Println("Init command failed")
             }
             */
-
+            
             p4, _ = tea.NewProgram(model4).Run()
             model4 = p4.(options_selector.Model)
 
@@ -125,12 +141,18 @@ func main() {
 
             // Ask the user for the lines/labels
             clearScreen() // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-            model5 := text_selector.Model{}
+            header = lipgloss.NewStyle().Foreground(lipgloss.Color("#C0C0C0")).Render("Type below the section to modify. You can insert your start label\nand your end label using the syntax 'start';'end' or you can modify\n a single line by digiting the line number or a range of lines using the syntax x-y") + "\n\n"
+            help = lipgloss.NewStyle().Foreground(lipgloss.Color("#C0C0C0")).Render("\n 'q' to quit     'enter' to select the lines/labels indicated\n '↑' to go up\n '↓' to go down")
+        
+            model5 := text_selector.Model{
+                Header: header,
+                Help: help,
+            }
 
             // Esegui Init
             cmd5 := model5.Init()
             if cmd5 == nil {
-                fmt.Println("Init command not executed")
+                fmt.Println("Init command failed")
             }
 
 	        p5, _ := tea.NewProgram(model5).Run()
