@@ -1,61 +1,89 @@
 package server
 
 import (
-	"errors"
+	"context"
+	"log"
 	"os"
-	"strings"
+	"os/signal"
+	"path/filepath"
+	"syscall"
+	"time"
 
-	"github.com/charmbracelet/log"
+	"github.com/adrg/xdg"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/ssh"
 	"github.com/charmbracelet/wish"
-	"github.com/charmbracelet/wish/logging"
+	"github.com/charmbracelet/wish/activeterm"
+	bm "github.com/charmbracelet/wish/bubbletea"
+	lm "github.com/charmbracelet/wish/logging"
+	"github.com/dyne/tgcom/utils/tui"
+	"github.com/dyne/tgcom/utils/tui/modelutils"
 )
 
-func listFilesInDir(directory string) (string, error) {
-	files, err := os.ReadDir(directory)
-	if err != nil {
-		return "", err
-	}
+const (
+	envHostKey = "_TGCOM_HOSTKEY"
+)
 
-	var fileList strings.Builder
-	for _, file := range files {
-		fileList.WriteString(file.Name() + "\n")
-	}
-
-	return fileList.String(), nil
-}
+var (
+	pathTgcom   = filepath.Join(xdg.DataHome, "tgcom")
+	pathHostKey = filepath.Join(pathTgcom, "hostkey")
+	teaOptions  = []tea.ProgramOption{tea.WithAltScreen(), tea.WithOutput(os.Stderr)}
+	dir         string
+)
 
 func StartServer() {
+	withHostKey := wish.WithHostKeyPath(pathHostKey)
+	if pem, ok := os.LookupEnv(envHostKey); ok {
+		withHostKey = wish.WithHostKeyPEM([]byte(pem))
+	}
 	srv, err := wish.NewServer(
 		wish.WithAddress(":2222"),
-		wish.WithHostKeyPath(".ssh/id_ed25519"),
 		wish.WithMiddleware(
+
+			bm.Middleware(func(s ssh.Session) (tea.Model, []tea.ProgramOption) {
+				// Initialize the file selector model with the directory argument
+				model := tui.Model{
+					State:         "FileSelection",
+					FilesSelector: modelutils.InitialModel(dir), // Initialize the FilesSelector model
+				}
+				return model, teaOptions
+			}),
 			func(next ssh.Handler) ssh.Handler {
-				return func(sess ssh.Session) {
-					command := sess.Command()
+				return func(s ssh.Session) {
+					command := s.Command()
 					if len(command) < 2 {
-						wish.Println(sess, "Usage tgcom <directory>")
-						next(sess)
+						wish.Println(s, "Usage tgcom <directory>")
+						next(s)
 					}
-					dir := command[1]
-					files, err := listFilesInDir(dir)
-					if err != nil {
-						wish.Printf(sess, "Error listing files: %v\n", err)
-						next(sess)
-					}
-					wish.Println(sess, files)
-					next(sess)
+					dir = command[1]
+					next(s)
 				}
 			},
-			logging.Middleware(),
+			activeterm.Middleware(),
+
+			lm.Middleware(),
 		),
+
+		withHostKey,
 	)
 	if err != nil {
-		log.Error("Could not start server", "error", err)
+		log.Fatalf("could not create server: %s", err)
 	}
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
-	log.Info("Starting SSH server", "port", "2222")
-	if err = srv.ListenAndServe(); err != nil && !errors.Is(err, ssh.ErrServerClosed) {
-		log.Error("Could not start server", "error", err)
+	log.Printf("starting server: %s", srv.Addr)
+	go func() {
+		if err := srv.ListenAndServe(); err != nil {
+			log.Fatalf("server returned an error: %s", err)
+		}
+	}()
+
+	<-done
+	log.Println("stopping server...")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatalf("could not shutdown server gracefully: %s", err)
 	}
 }

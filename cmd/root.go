@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"strings"
 
 	"github.com/dyne/tgcom/utils/modfile"
@@ -171,32 +170,4 @@ func customUsageFunc(cmd *cobra.Command) error {
 		}
 	})
 	return nil
-}
-
-func executeRemoteCommand(remotePath string) {
-	parts := strings.SplitN(remotePath, "@", 2)
-	if len(parts) != 2 {
-		fmt.Println("Invalid format. Usage: tgcom -w user@remote:/path/folder")
-		os.Exit(1)
-	}
-
-	userHost := parts[0]
-	pathParts := strings.SplitN(parts[1], ":", 2)
-	if len(pathParts) != 2 {
-		fmt.Println("Invalid format. Usage: tgcom -w user@remote:/path/folder")
-		os.Exit(1)
-	}
-
-	host := pathParts[0]
-	dir := pathParts[1]
-
-	sshCommand := fmt.Sprintf("ssh -p 2222 %s@%s tgcom %s", userHost, host, dir)
-	cmd := exec.Command("bash", "-c", sshCommand)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
-		fmt.Printf("Error executing command: %v\n", err)
-		os.Exit(1)
-	}
 }
