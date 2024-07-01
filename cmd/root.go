@@ -40,6 +40,7 @@ var rootCmd = &cobra.Command{
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
+		fmt.Println("Error executing command:", err)
 		os.Exit(1)
 	}
 }
