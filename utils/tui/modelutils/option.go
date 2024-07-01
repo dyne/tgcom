@@ -61,31 +61,27 @@ func (m ModeSelector) View() string {
 			s += cursor + " " + choice + "\n"
 		}
 		return s
-	} else {
-		s := ""
-		switch m.Speed {
-
-		case "Slow mode":
-			s += paint("silver").Render("Select action for file: "+m.File) + "\n\n"
-			for i, choice := range m.Choices {
-				cursor := " "
-				if m.cursor == i {
-					cursor = ">"
-				}
-				s += cursor + " " + choice + "\n"
-			}
-
-		case "Fast mode":
-			s += paint("silver").Render("Select action:") + "\n\n"
-			for i, choice := range m.Choices {
-				cursor := " "
-				if m.cursor == i {
-					cursor = ">"
-				}
-				s += cursor + " " + choice + "\n"
-			}
-		}
-		return s + paint("silver").Render("\n 'q' to quit     'enter' to modify selected files\n '↑' to go up\n '↓' to go down")
 	}
-
+	s := ""
+	switch m.Speed {
+	case "Slow mode":
+		s += paint("silver").Render("Select action for file: "+m.File) + "\n\n"
+		for i, choice := range m.Choices {
+			cursor := " "
+			if m.cursor == i {
+				cursor = ">"
+			}
+			s += cursor + " " + choice + "\n"
+		}
+	case "Fast mode":
+		s += paint("silver").Render("Select action:") + "\n\n"
+		for i, choice := range m.Choices {
+			cursor := " "
+			if m.cursor == i {
+				cursor = ">"
+			}
+			s += cursor + " " + choice + "\n"
+		}
+	}
+	return s + paint("silver").Render("\n 'q' to quit     'enter' to modify selected files\n '↑' to go up\n '↓' to go down")
 }
