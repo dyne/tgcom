@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -39,12 +40,13 @@ func StartServer() {
 	srv, err := wish.NewServer(
 		wish.WithAddress(":2222"),
 		wish.WithMiddleware(
-
 			bm.Middleware(func(s ssh.Session) (tea.Model, []tea.ProgramOption) {
+				pty, _, _ := s.Pty()
+				fmt.Println(pty.Window.Height)
 				// Initialize the file selector model with the directory argument
 				model := tui.Model{
 					State:         "FileSelection",
-					FilesSelector: modelutils.InitialModel(dir), // Initialize the FilesSelector model
+					FilesSelector: modelutils.InitialModel(dir, pty.Window.Height-5), // Initialize the FilesSelector model with window height
 				}
 				return model, teaOptions
 			}),
@@ -60,7 +62,6 @@ func StartServer() {
 				}
 			},
 			activeterm.Middleware(),
-
 			lm.Middleware(),
 		),
 

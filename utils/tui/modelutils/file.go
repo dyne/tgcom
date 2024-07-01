@@ -9,21 +9,18 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-const windowHeight int = 20
-
 type FilesSelector struct {
 	Current_Dir            string
 	Files_And_Dir          []string
 	Selected_Files_And_Dir map[int]bool
-
-	Files_Path []string
-
-	cursor       int
-	scrollOffset int
-	Done         bool
+	Files_Path             []string
+	cursor                 int
+	scrollOffset           int
+	Done                   bool
+	WindowHeight           int
 }
 
-func InitialModel(currentDir string) FilesSelector {
+func InitialModel(currentDir string, windowHeight int) FilesSelector {
 	var files_and_dir []string
 	selected_files_and_dir := make(map[int]bool)
 
@@ -48,6 +45,7 @@ func InitialModel(currentDir string) FilesSelector {
 		Current_Dir:            currentDir,
 		Files_And_Dir:          files_and_dir,
 		Selected_Files_And_Dir: selected_files_and_dir,
+		WindowHeight:           windowHeight,
 	}
 }
 
@@ -78,7 +76,7 @@ func (m FilesSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "down":
 			if m.cursor < len(m.Files_And_Dir)-1 {
 				m.cursor++
-				if m.cursor >= m.scrollOffset+windowHeight {
+				if m.cursor >= m.scrollOffset+m.WindowHeight {
 					m.scrollOffset++
 				}
 			}
@@ -103,7 +101,7 @@ func (m FilesSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "esc":
 			moveToPrevDir(&m)
-		//Press x to confirm
+		// Press x to confirm
 		case "x":
 			m.Done = true
 		}
@@ -122,7 +120,7 @@ func (m FilesSelector) View() string {
 
 	s += "\n"
 
-	for i := m.scrollOffset; i < m.scrollOffset+windowHeight && i < len(m.Files_And_Dir); i++ {
+	for i := m.scrollOffset; i < m.scrollOffset+m.WindowHeight && i < len(m.Files_And_Dir); i++ {
 		choice := m.Files_And_Dir[i]
 		check_dir, err := IsDirectory(choice)
 		if err != nil {

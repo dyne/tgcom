@@ -57,6 +57,7 @@ func executeRemoteCommand(remotePath string) {
 		log.Fatalf("Error starting SSH with PTY: %v", err)
 	}
 }
+
 func startSSHWithPTY(cmd string, args []string) error {
 	// Create SSH command
 	sshCommand := exec.Command(cmd, args...)
@@ -75,6 +76,11 @@ func startSSHWithPTY(cmd string, args []string) error {
 	}
 	defer term.Restore(int(os.Stdin.Fd()), oldState)
 
+	// Resize PTY to current terminal size
+	if err := resizePTY(ptmx); err != nil {
+		return fmt.Errorf("failed to resize PTY: %w", err)
+	}
+
 	// Forward input to PTY
 	go func() {
 		_, _ = io.Copy(ptmx, os.Stdin)
@@ -90,11 +96,7 @@ func startSSHWithPTY(cmd string, args []string) error {
 		ch := make(chan os.Signal, 1)
 		signal.Notify(ch, syscall.SIGWINCH)
 		for range ch {
-			size, err := pty.GetsizeFull(os.Stdin)
-			if err != nil {
-				continue
-			}
-			if err := pty.Setsize(ptmx, size); err != nil {
+			if err := resizePTY(ptmx); err != nil {
 				log.Printf("Error resizing PTY: %v", err)
 			}
 		}
@@ -108,5 +110,16 @@ func startSSHWithPTY(cmd string, args []string) error {
 	// Wait a bit before exiting to ensure all output is processed
 	time.Sleep(100 * time.Millisecond)
 
+	return nil
+}
+
+func resizePTY(ptmx *os.File) error {
+	size, err := pty.GetsizeFull(os.Stdin)
+	if err != nil {
+		return fmt.Errorf("failed to get terminal size: %w", err)
+	}
+	if err := pty.Setsize(ptmx, size); err != nil {
+		return fmt.Errorf("failed to set terminal size: %w", err)
+	}
 	return nil
 }
