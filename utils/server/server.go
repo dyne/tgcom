@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -42,7 +41,6 @@ func StartServer() {
 		wish.WithMiddleware(
 			bm.Middleware(func(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 				pty, _, _ := s.Pty()
-				fmt.Println(pty.Window.Height)
 				// Initialize the file selector model with the directory argument
 				model := tui.Model{
 					State:         "FileSelection",
