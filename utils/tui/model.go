@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
-	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/dyne/tgcom/utils/modfile"
@@ -20,7 +19,6 @@ type Model struct {
 	Labels     []string
 	LabelType  []bool
 	CurrentDir string // Current directory for file selection
-	Success    bool
 	Error      error
 
 	// Models for different selection steps
@@ -134,18 +132,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case "ApplyChanges":
-		if !m.Success {
-			err := m.applyChanges()
-			if err != nil {
-				m.Error = err
-				return m, tea.Quit
-			}
-			m.Success = true
-			return m, tea.Tick(time.Second*2, func(time.Time) tea.Msg {
-				return tea.Quit
-			})
+		err := m.applyChanges()
+		if err != nil {
+			m.Error = err
+			return m, tea.Quit
 		}
-		return m, nil
+		return m, tea.Quit // Quit the program after applying changes
+
 	}
 	return m, nil
 }
@@ -166,17 +159,14 @@ func (m Model) View() string {
 	case "LabelInput":
 		return m.LabelInput.View()
 	case "ApplyChanges":
-		if m.Success {
-			return "All changes applied successfully!"
-		}
-		return "Applying changes..."
+		return "All changes applied successfully!"
 	default:
 		return ""
 	}
 }
 
 // applyChanges applies changes to selected files based on user inputs
-func (m Model) applyChanges() error {
+func (m *Model) applyChanges() error {
 	for i := 0; i < len(m.Files); i++ {
 		currentFilePath, err := AbsToRel(m.Files[i])
 		if err != nil {
