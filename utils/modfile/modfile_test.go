@@ -67,7 +67,7 @@ func TestWriteChanges(t *testing.T) {
 			fileContent: "start\nline 1\nline 2\nline 3\nend\n",
 		},
 		{
-			name:         "out of range",
+			name:         "Out of range",
 			lineNum:      [2]int{10, 10},
 			startLabel:   "",
 			endLabel:     "",
@@ -79,6 +79,34 @@ func TestWriteChanges(t *testing.T) {
 			shouldError: true,
 			expectedErr: "line number is out of range",
 			fileContent: "",
+		},
+		{
+			name:         "Wrong  start label",
+			lineNum:      [2]int{0, 0},
+			startLabel:   "error",
+			endLabel:     "end",
+			commentChars: "//",
+			modFunc: func(line, commentChars string) string {
+				return "// " + line
+			},
+			expected:    "",
+			shouldError: true,
+			expectedErr: "start label not found in file",
+			fileContent: "start\nline 1\nline 2\nline 3\nend\n",
+		},
+		{
+			name:         "Wrong  end label",
+			lineNum:      [2]int{0, 0},
+			startLabel:   "start",
+			endLabel:     "error",
+			commentChars: "//",
+			modFunc: func(line, commentChars string) string {
+				return "// " + line
+			},
+			expected:    "",
+			shouldError: true,
+			expectedErr: "end label not found in file",
+			fileContent: "start\nline 1\nline 2\nline 3\nend\n",
 		},
 	}
 
@@ -189,7 +217,7 @@ func TestPrintChanges(t *testing.T) {
 			expectedErr: "",
 		},
 		{
-			name:         "out of range",
+			name:         "Out of range",
 			lineNum:      [2]int{10, 10},
 			startLabel:   "",
 			endLabel:     "",
@@ -200,6 +228,32 @@ func TestPrintChanges(t *testing.T) {
 			expected:    "",
 			shouldError: true,
 			expectedErr: "line number is out of range",
+		},
+		{
+			name:         "Wrong  start label",
+			lineNum:      [2]int{0, 0},
+			startLabel:   "error",
+			endLabel:     "end",
+			commentChars: "//",
+			modFunc: func(line, commentChars string) string {
+				return "// " + line
+			},
+			expected:    "",
+			shouldError: true,
+			expectedErr: "start label not found in file",
+		},
+		{
+			name:         "Wrong  end label",
+			lineNum:      [2]int{0, 0},
+			startLabel:   "start",
+			endLabel:     "error",
+			commentChars: "//",
+			modFunc: func(line, commentChars string) string {
+				return "// " + line
+			},
+			expected:    "",
+			shouldError: true,
+			expectedErr: "end label not found in file",
 		},
 	}
 

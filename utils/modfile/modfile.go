@@ -156,11 +156,14 @@ func writeChanges(inputFile *os.File, outputFile *os.File, lineNum [2]int, start
 	writer := bufio.NewWriter(outputFile)
 	currentLine := 1
 	inSection := false
+	foundStart := false
+	foundEnd := false
 	var err error
 
 	for scanner.Scan() {
 		lineContent := scanner.Text()
 		if strings.Contains(lineContent, endLabel) {
+			foundEnd = true
 			inSection = false
 		}
 
@@ -169,6 +172,7 @@ func writeChanges(inputFile *os.File, outputFile *os.File, lineNum [2]int, start
 		}
 
 		if strings.Contains(lineContent, startLabel) {
+			foundStart = true
 			inSection = true
 		}
 
@@ -182,6 +186,13 @@ func writeChanges(inputFile *os.File, outputFile *os.File, lineNum [2]int, start
 	if lineNum[1] > currentLine && startLabel == "" && endLabel == "" {
 		return errors.New("line number is out of range")
 	}
+	if !foundStart {
+		return errors.New("start label not found in file")
+	}
+
+	if !foundEnd {
+		return errors.New("end label not found in file")
+	}
 
 	if err = scanner.Err(); err != nil {
 		return err
@@ -194,6 +205,8 @@ func printChanges(inputFile *os.File, lineNum [2]int, startLabel, endLabel, comm
 	scanner := bufio.NewScanner(inputFile)
 	currentLine := 1
 	inSection := false
+	foundStart := false
+	foundEnd := false
 
 	for scanner.Scan() {
 
@@ -201,6 +214,7 @@ func printChanges(inputFile *os.File, lineNum [2]int, startLabel, endLabel, comm
 
 		if strings.Contains(lineContent, endLabel) {
 			inSection = false
+			foundEnd = true
 		}
 
 		if shouldProcessLine(currentLine, lineNum, startLabel, endLabel, inSection) {
@@ -210,6 +224,7 @@ func printChanges(inputFile *os.File, lineNum [2]int, startLabel, endLabel, comm
 
 		if strings.Contains(lineContent, startLabel) {
 			inSection = true
+			foundStart = true
 		}
 
 		currentLine++
@@ -217,6 +232,13 @@ func printChanges(inputFile *os.File, lineNum [2]int, startLabel, endLabel, comm
 
 	if lineNum[1] > currentLine && startLabel == "" && endLabel == "" {
 		return errors.New("line number is out of range")
+	}
+	if !foundStart {
+		return errors.New("start label not found in file")
+	}
+
+	if !foundEnd {
+		return errors.New("end label not found in file")
 	}
 
 	return scanner.Err()
