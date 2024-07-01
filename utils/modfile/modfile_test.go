@@ -8,20 +8,21 @@ import (
 )
 
 func TestWriteChanges(t *testing.T) {
-	// Create a temporary test file
-	testFilename := "testfile.txt"
-	defer os.Remove(testFilename)
-
-	// Write some content to the test file
-	file, err := os.Create(testFilename)
-	if err != nil {
-		t.Fatalf("failed to create test file: %v", err)
-	}
-	defer file.Close()
-
-	_, err = file.WriteString("start\nline 1\nline 2\nline 3\nend\n")
-	if err != nil {
-		t.Fatalf("failed to write to test file: %v", err)
+	// Define common setup code to create a test file with content
+	setupTestFile := func(content string) (string, func()) {
+		testFilename := "testfile.txt"
+		file, err := os.Create(testFilename)
+		if err != nil {
+			t.Fatalf("failed to create test file: %v", err)
+		}
+		if content != "" {
+			_, err = file.WriteString(content)
+			if err != nil {
+				t.Fatalf("failed to write to test file: %v", err)
+			}
+		}
+		file.Close()
+		return testFilename, func() { os.Remove(testFilename) }
 	}
 
 	// Define test cases
@@ -33,6 +34,9 @@ func TestWriteChanges(t *testing.T) {
 		commentChars string
 		modFunc      func(string, string) string
 		expected     string
+		shouldError  bool
+		expectedErr  string
+		fileContent  string
 	}{
 		{
 			name:         "Test with lines",
@@ -43,7 +47,10 @@ func TestWriteChanges(t *testing.T) {
 			modFunc: func(line, commentChars string) string {
 				return "// " + line
 			},
-			expected: "start\n// line 1\n// line 2\n// line 3\nend\n",
+			expected:    "start\n// line 1\n// line 2\n// line 3\nend\n",
+			shouldError: false,
+			expectedErr: "",
+			fileContent: "start\nline 1\nline 2\nline 3\nend\n",
 		},
 		{
 			name:         "Test with labels",
@@ -54,13 +61,33 @@ func TestWriteChanges(t *testing.T) {
 			modFunc: func(line, commentChars string) string {
 				return "// " + line
 			},
-			expected: "start\n// line 1\n// line 2\n// line 3\nend\n",
+			expected:    "start\n// line 1\n// line 2\n// line 3\nend\n",
+			shouldError: false,
+			expectedErr: "",
+			fileContent: "start\nline 1\nline 2\nline 3\nend\n",
 		},
-		// Add more test cases as needed
+		{
+			name:         "out of range",
+			lineNum:      [2]int{10, 10},
+			startLabel:   "",
+			endLabel:     "",
+			commentChars: "//",
+			modFunc: func(line, commentChars string) string {
+				return "// " + line
+			},
+			expected:    "",
+			shouldError: true,
+			expectedErr: "line number is out of range",
+			fileContent: "",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Setup test file
+			testFilename, cleanup := setupTestFile(tt.fileContent)
+			defer cleanup()
+
 			// Open test file for reading
 			file, err := os.Open(testFilename)
 			if err != nil {
@@ -81,18 +108,27 @@ func TestWriteChanges(t *testing.T) {
 
 			// Call writeChanges function
 			err = writeChanges(file, outputFile, tt.lineNum, tt.startLabel, tt.endLabel, tt.commentChars, tt.modFunc)
-			if err != nil {
-				t.Fatalf("writeChanges returned an error: %v", err)
-			}
+			if tt.shouldError {
+				if err == nil {
+					t.Fatalf("expected an error but did not get one")
+				}
+				if err.Error() != tt.expectedErr {
+					t.Errorf("unexpected error message:\ngot: %s\nwant: %s", err.Error(), tt.expectedErr)
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("writeChanges returned an error: %v", err)
+				}
 
-			// Read the output file
-			outputFile.Close()
-			outputFile, err = os.Open(outputFilename)
-			if err != nil {
-				t.Fatalf("failed to open output file: %v", err)
+				// Read the output file
+				outputFile.Close()
+				outputFile, err = os.Open(outputFilename)
+				if err != nil {
+					t.Fatalf("failed to open output file: %v", err)
+				}
+				defer outputFile.Close()
+				assertFileContent(t, outputFile.Name(), tt.expected)
 			}
-			defer outputFile.Close()
-			assertFileContent(t, outputFile.Name(), tt.expected)
 		})
 	}
 }
@@ -123,6 +159,8 @@ func TestPrintChanges(t *testing.T) {
 		commentChars string
 		modFunc      func(string, string) string
 		expected     string
+		shouldError  bool
+		expectedErr  string
 	}{
 		{
 			name:         "Test with lines",
@@ -133,7 +171,9 @@ func TestPrintChanges(t *testing.T) {
 			modFunc: func(line, commentChars string) string {
 				return "// " + line
 			},
-			expected: "2: line 1 -> // line 1\n3: line 2 -> // line 2\n4: line 3 -> // line 3\n",
+			expected:    "2: line 1 -> // line 1\n3: line 2 -> // line 2\n4: line 3 -> // line 3\n",
+			shouldError: false,
+			expectedErr: "",
 		},
 		{
 			name:         "Test with labels",
@@ -144,9 +184,23 @@ func TestPrintChanges(t *testing.T) {
 			modFunc: func(line, commentChars string) string {
 				return "// " + line
 			},
-			expected: "2: line 1 -> // line 1\n3: line 2 -> // line 2\n4: line 3 -> // line 3\n",
+			expected:    "2: line 1 -> // line 1\n3: line 2 -> // line 2\n4: line 3 -> // line 3\n",
+			shouldError: false,
+			expectedErr: "",
 		},
-		// Add more test cases as needed
+		{
+			name:         "out of range",
+			lineNum:      [2]int{10, 10},
+			startLabel:   "",
+			endLabel:     "",
+			commentChars: "//",
+			modFunc: func(line, commentChars string) string {
+				return "// " + line
+			},
+			expected:    "",
+			shouldError: true,
+			expectedErr: "line number is out of range",
+		},
 	}
 
 	for _, tt := range tests {
@@ -164,19 +218,28 @@ func TestPrintChanges(t *testing.T) {
 
 			// Call printChanges function
 			err = printChanges(file, tt.lineNum, tt.startLabel, tt.endLabel, tt.commentChars, tt.modFunc)
-			if err != nil {
-				t.Fatalf("printChanges returned an error: %v", err)
-			}
-			w.Close()
-			var buf bytes.Buffer
-			io.Copy(&buf, r)
-			r.Close()
-			os.Stdout = old
+			if tt.shouldError {
+				if err == nil {
+					t.Fatalf("expected an error but did not get one")
+				}
+				if err.Error() != tt.expectedErr {
+					t.Errorf("unexpected error message:\ngot: %s\nwant: %s", err.Error(), tt.expectedErr)
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("printChanges returned an error: %v", err)
+				}
+				w.Close()
+				var buf bytes.Buffer
+				io.Copy(&buf, r)
+				r.Close()
+				os.Stdout = old
 
-			// Compare output with expected
-			output := buf.String()
-			if output != tt.expected {
-				t.Errorf("Unexpected output:\nGot:\n%s\nExpected:\n%s", output, tt.expected)
+				// Compare output with expected
+				output := buf.String()
+				if output != tt.expected {
+					t.Errorf("Unexpected output:\nGot:\n%s\nExpected:\n%s", output, tt.expected)
+				}
 			}
 		})
 	}
