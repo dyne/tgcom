@@ -2,6 +2,7 @@ package modelutils
 
 import tea "github.com/charmbracelet/bubbletea"
 
+// ModeSelector is a struct for managing mode selections in the TUI.
 type ModeSelector struct {
 	File     string
 	Choices  []string
