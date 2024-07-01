@@ -2,7 +2,6 @@ package modelutils
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -10,42 +9,43 @@ import (
 )
 
 type FilesSelector struct {
-	Current_Dir            string
-	Files_And_Dir          []string
-	Selected_Files_And_Dir map[int]bool
-	Files_Path             []string
-	cursor                 int
-	scrollOffset           int
-	Done                   bool
-	WindowHeight           int
+	CurrentDir          string
+	FilesAndDir         []string
+	SelectedFilesAndDir map[int]bool
+	FilesPath           []string
+	cursor              int
+	scrollOffset        int
+	Done                bool
+	WindowHeight        int
+	Error               error
 }
 
 func InitialModel(currentDir string, windowHeight int) FilesSelector {
-	var files_and_dir []string
-	selected_files_and_dir := make(map[int]bool)
+	var filesAndDir []string
+	selectedFilesAndDir := make(map[int]bool)
 
 	entries, err := os.ReadDir(currentDir)
 	if err != nil {
-		log.Printf("Error occurred: %v", err)
+		return FilesSelector{Error: fmt.Errorf("error reading directory: %w", err)}
 	}
 
 	for _, entry := range entries {
-		entry_Path, err := GetPathOfEntry(entry, currentDir)
+		entryPath, err := GetPathOfEntry(entry, currentDir)
 		if err != nil {
-			log.Printf("Error occurred: %v", err)
+			return FilesSelector{Error: fmt.Errorf("error getting path of entry: %w", err)}
 		}
-		files_and_dir = append(files_and_dir, entry_Path)
+		filesAndDir = append(filesAndDir, entryPath)
 	}
 
-	for i := 0; i < len(files_and_dir); i++ {
-		selected_files_and_dir[i] = false
+	for i := 0; i < len(filesAndDir); i++ {
+		selectedFilesAndDir[i] = false
 	}
 
 	return FilesSelector{
-		Current_Dir:            currentDir,
-		Files_And_Dir:          files_and_dir,
-		Selected_Files_And_Dir: selected_files_and_dir,
-		WindowHeight:           windowHeight,
+		CurrentDir:          currentDir,
+		FilesAndDir:         filesAndDir,
+		SelectedFilesAndDir: selectedFilesAndDir,
+		WindowHeight:        windowHeight,
 	}
 }
 
@@ -55,15 +55,13 @@ func (m FilesSelector) Init() tea.Cmd {
 
 func (m FilesSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-
 	case tea.KeyMsg:
+		if m.Error != nil {
+			return m, tea.Quit
+		}
 		switch msg.String() {
-
-		// These keys should exit the program.
 		case "ctrl+c", "q":
 			return m, tea.Quit
-
-		// The "up" key move the cursor up
 		case "up":
 			if m.cursor > 0 {
 				m.cursor--
@@ -71,37 +69,31 @@ func (m FilesSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.scrollOffset--
 				}
 			}
-
-		// The "down" key move the cursor down
 		case "down":
-			if m.cursor < len(m.Files_And_Dir)-1 {
+			if m.cursor < len(m.FilesAndDir)-1 {
 				m.cursor++
 				if m.cursor >= m.scrollOffset+m.WindowHeight {
 					m.scrollOffset++
 				}
 			}
-
-		// The "enter" key moves you to the next directory or select/unselect a file
 		case "enter":
-			check_dir, err := IsDirectory(m.Files_And_Dir[m.cursor])
+			checkDir, err := IsDirectory(m.FilesAndDir[m.cursor])
 			if err != nil {
-				log.Fatal(err)
+				m.Error = fmt.Errorf("error checking directory: %w", err)
+				return m, tea.Quit
 			}
-
-			if check_dir {
-				moveToNextDir(&m, m.Files_And_Dir[m.cursor])
+			if checkDir {
+				moveToNextDir(&m, m.FilesAndDir[m.cursor])
 			} else {
-				// update Files_Path
-				if Contains(m.Files_Path, m.Files_And_Dir[m.cursor]) {
-					m.Files_Path = Remove(m.Files_Path, m.Files_And_Dir[m.cursor])
+				if Contains(m.FilesPath, m.FilesAndDir[m.cursor]) {
+					m.FilesPath = Remove(m.FilesPath, m.FilesAndDir[m.cursor])
 				} else {
-					m.Files_Path = append(m.Files_Path, m.Files_And_Dir[m.cursor])
+					m.FilesPath = append(m.FilesPath, m.FilesAndDir[m.cursor])
 				}
-				m.Selected_Files_And_Dir[m.cursor] = !m.Selected_Files_And_Dir[m.cursor]
+				m.SelectedFilesAndDir[m.cursor] = !m.SelectedFilesAndDir[m.cursor]
 			}
 		case "esc":
-			moveToPrevDir(&m)
-		// Press x to confirm
+			moveToPreviousDir(&m)
 		case "x":
 			m.Done = true
 		}
@@ -110,25 +102,27 @@ func (m FilesSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m FilesSelector) View() string {
-	// The header
-	s := paint("silver").Render("\n Select the files you want to modify...") + "\n"
-
-	s += paint("silver").Render("\n Selected files till now:") + "\n"
-	for i := 0; i < len(m.Files_Path); i++ {
-		s += fmt.Sprintf(" %s\n", paint("green").Render(m.Files_Path[i]))
+	if m.Error != nil {
+		return paint("red").Render(fmt.Sprintf("An error occurred: %v", m.Error))
 	}
 
+	s := paint("silver").Render("\n Select the files you want to modify...") + "\n"
+	s += paint("silver").Render("\n Selected files till now:") + "\n"
+	for i := 0; i < len(m.FilesPath); i++ {
+		s += fmt.Sprintf(" %s\n", paint("green").Render(m.FilesPath[i]))
+	}
 	s += "\n"
 
-	for i := m.scrollOffset; i < m.scrollOffset+m.WindowHeight && i < len(m.Files_And_Dir); i++ {
-		choice := m.Files_And_Dir[i]
-		check_dir, err := IsDirectory(choice)
+	for i := m.scrollOffset; i < m.scrollOffset+m.WindowHeight && i < len(m.FilesAndDir); i++ {
+		choice := m.FilesAndDir[i]
+		checkDir, err := IsDirectory(choice)
 		if err != nil {
-			log.Fatal(err)
+			m.Error = fmt.Errorf("error checking directory: %w", err)
+			return paint("red").Render(fmt.Sprintf("An error occurred: %v", m.Error))
 		}
-		if check_dir {
+		if checkDir {
 			choice = paint("blue").Render("❒ " + choice)
-		} else if Contains(m.Files_Path, choice) {
+		} else if Contains(m.FilesPath, choice) {
 			choice = paint("lime").Render("❒ " + choice)
 		} else {
 			choice = paint("silver").Render("❒ " + choice)
@@ -141,7 +135,6 @@ func (m FilesSelector) View() string {
 
 		s += fmt.Sprintf("%s %s\n", cursor, choice)
 	}
-	// The footer
 	s += paint("silver").Render("\n 'q' to quit      'esc' to move to parent directory\n '↑' to go up     'x' to modify selected files\n '↓' to go down   'enter' to select pointed file/move to pointed sub folder")
 	return s
 }

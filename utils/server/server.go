@@ -46,6 +46,10 @@ func StartServer() {
 					State:         "FileSelection",
 					FilesSelector: modelutils.InitialModel(dir, pty.Window.Height-5), // Initialize the FilesSelector model with window height
 				}
+				if model.Error != nil {
+					wish.Println(s, model.Error.Error())
+					return nil, nil
+				}
 				return model, teaOptions
 			}),
 			func(next ssh.Handler) ssh.Handler {
