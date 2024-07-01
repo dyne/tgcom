@@ -83,7 +83,11 @@ func (m FilesSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Quit
 			}
 			if checkDir {
-				moveToNextDir(&m, m.FilesAndDir[m.cursor])
+				err := moveToNextDir(&m, m.FilesAndDir[m.cursor])
+				if err != nil {
+					m.Error = fmt.Errorf("error checking directory: %w", err)
+					return m, tea.Quit
+				}
 			} else {
 				if Contains(m.FilesPath, m.FilesAndDir[m.cursor]) {
 					m.FilesPath = Remove(m.FilesPath, m.FilesAndDir[m.cursor])
@@ -93,7 +97,11 @@ func (m FilesSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.SelectedFilesAndDir[m.cursor] = !m.SelectedFilesAndDir[m.cursor]
 			}
 		case "esc":
-			moveToPreviousDir(&m)
+			err := moveToPreviousDir(&m)
+			if err != nil {
+				m.Error = fmt.Errorf("error moving back: %w", err)
+				return m, tea.Quit
+			}
 		case "x":
 			m.Done = true
 		}

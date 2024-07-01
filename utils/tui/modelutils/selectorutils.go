@@ -3,7 +3,6 @@ package modelutils
 import (
 	"fmt"
 	"io/fs"
-	"log"
 	"os"
 	"path/filepath"
 )
@@ -64,19 +63,19 @@ func GetPathOfEntry(entry fs.DirEntry, baseDir string) (string, error) {
 	return absPath, nil
 }
 
-func moveToNextDir(filesSelector *FilesSelector, nextDirPath string) {
+func moveToNextDir(filesSelector *FilesSelector, nextDirPath string) error {
 	var filesAndDirs []string
 	selectedFilesAndDirs := make(map[int]bool)
 
 	entries, err := os.ReadDir(nextDirPath)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	for _, entry := range entries {
 		entryPath, err := GetPathOfEntry(entry, nextDirPath)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		filesAndDirs = append(filesAndDirs, entryPath)
 	}
@@ -90,13 +89,13 @@ func moveToNextDir(filesSelector *FilesSelector, nextDirPath string) {
 	filesSelector.SelectedFilesAndDir = selectedFilesAndDirs
 	filesSelector.cursor = 0
 	filesSelector.scrollOffset = 0
+	return nil
 }
 
-func moveToPreviousDir(filesSelector *FilesSelector) {
+func moveToPreviousDir(filesSelector *FilesSelector) error {
 	prevDirPath, err := GetParentDirectory(filesSelector.CurrentDir)
 	if err != nil {
-		os.Exit(0)
-		log.Fatal(err)
+		return err
 	}
 
 	var filesAndDirs []string
@@ -104,13 +103,13 @@ func moveToPreviousDir(filesSelector *FilesSelector) {
 
 	entries, err := os.ReadDir(prevDirPath)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	for _, entry := range entries {
 		entryPath, err := GetPathOfEntry(entry, prevDirPath)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		filesAndDirs = append(filesAndDirs, entryPath)
 	}
@@ -124,4 +123,5 @@ func moveToPreviousDir(filesSelector *FilesSelector) {
 	filesSelector.SelectedFilesAndDir = selectedFilesAndDirs
 	filesSelector.cursor = 0
 	filesSelector.scrollOffset = 0
+	return nil
 }
