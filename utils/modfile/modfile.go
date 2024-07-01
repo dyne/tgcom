@@ -53,7 +53,6 @@ func ChangeFile(conf Config) error {
 		isStdin = true
 	} else {
 		// Open the file
-		fmt.Println(conf)
 		file, err = os.Open(conf.Filename)
 		if err != nil {
 			return err
