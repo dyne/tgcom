@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -17,6 +18,7 @@ type Model struct {
 	Files      []string
 	Actions    []string
 	Labels     []string
+	LabelType  []bool
 	CurrentDir string // Current directory for file selection
 	Success    bool
 	Error      error
@@ -105,7 +107,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			newLabelInput, cmd := m.LabelInput.Update(msg)
 			m.LabelInput = newLabelInput.(modelutils.LabelInput)
 			if m.LabelInput.Done {
+				if m.LabelInput.Error != nil {
+					m.Error = m.LabelInput.Error
+					return m, tea.Quit
+				}
 				m.Labels = append(m.Labels, m.LabelInput.Input)
+				m.LabelType = append(m.LabelType, m.LabelInput.IsLabel)
 				if len(m.Labels) == len(m.Files) {
 					m.State = "ApplyChanges"
 				} else {
@@ -175,14 +182,24 @@ func (m Model) applyChanges() error {
 		if err != nil {
 			return fmt.Errorf("failed to convert to relative path: %w", err)
 		}
-
-		conf := modfile.Config{
-			Filename: currentFilePath,
-			LineNum:  m.Labels[i],
-			Action:   m.Actions[i],
+		if !m.LabelType[i] {
+			conf := modfile.Config{
+				Filename: currentFilePath,
+				LineNum:  m.Labels[i],
+				Action:   m.Actions[i],
+			}
+			err = modfile.ChangeFile(conf)
+		} else {
+			parts := strings.Split(m.Labels[i], ";")
+			conf := modfile.Config{
+				Filename:   currentFilePath,
+				StartLabel: parts[0],
+				EndLabel:   parts[1],
+				Action:     m.Actions[i],
+			}
+			err = modfile.ChangeFile(conf)
 		}
 
-		err = modfile.ChangeFile(conf)
 		if err != nil {
 			return fmt.Errorf("failed to apply changes to file %s: %w", m.Files[i], err)
 		}
