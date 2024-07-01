@@ -58,8 +58,11 @@ func (m LabelInput) View() string {
 
 	// the header
 	s := paint("silver").Render("Type below the section to modify. You can insert your start label\nand your end label using the syntax 'start';'end' or you can modify\n a single line by digiting the line number or a range of lines using the syntax x-y") + "\n\n"
-
-	s += paint("green").Render(m.File+": ✏ "+m.Input) + flash + "\n"
+	if m.File != "" {
+		s += paint("green").Render(m.File+": ✏ "+m.Input) + flash + "\n"
+	} else {
+		s += paint("green").Render("✏ "+m.Input) + flash + "\n"
+	}
 
 	// The footer
 	s += paint("silver").Render("\n 'q' to quit     'enter' to select the lines/labels indicated\n '↑' to go up\n '↓' to go down")
