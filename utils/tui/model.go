@@ -113,7 +113,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.Actions = append(m.Actions, m.ActionSelector.Selected)
 				}
 				m.State = "LabelInput"
-				m.LabelInput = modelutils.NewLabelInput(filepath.Base(m.Files[0]))
+				m.LabelInput = modelutils.NewLabelInput("")
 			}
 			return m, cmd
 		}
