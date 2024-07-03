@@ -327,7 +327,7 @@ func selectCommentChars(filename, lang string) (string, error) {
 		case ".sh", ".bash":
 			return CommentChars["bash"], nil
 		case ".cpp", ".cc", ".h", ".c":
-			return CommentChars["C"], nil
+			return CommentChars["c"], nil
 		case ".java":
 			return CommentChars["java"], nil
 		case ".py":
