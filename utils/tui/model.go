@@ -13,7 +13,7 @@ import (
 // Model represents the main application model
 type Model struct {
 	// State variables
-	State      string // Current state: "FileSelection", "ModeSelection", "ActionSelection", "LabelInput", "ApplyChanges", "Error"
+	State      string // Current state: "FileSelection", "ModeSelection", "ActionSelection", "LabelInput", "ApplyChanges", "Error", "Final"
 	Files      []string
 	Actions    []string
 	Labels     []string
@@ -28,6 +28,11 @@ type Model struct {
 	LabelInput     modelutils.LabelInput
 }
 
+// applyChangesMsg represents a message indicating that changes have been applied.
+type applyChangesMsg struct {
+	err error
+}
+
 // Init initializes the model
 func (m Model) Init() tea.Cmd {
 	return m.FilesSelector.Init()
@@ -38,6 +43,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.Error != nil {
 		// If an error occurred, display the error and quit
 		return m, tea.Quit
+	}
+
+	switch msg := msg.(type) {
+	case applyChangesMsg:
+		if msg.err != nil {
+			m.Error = msg.err
+		}
+		m.State = "Final"
+		return m, nil
+
+	case tea.KeyMsg:
+		if m.State == "Final" {
+			return m, tea.Quit
+		}
 	}
 
 	switch m.State {
@@ -61,6 +80,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.Files = m.FilesSelector.FilesPath
 			if len(m.Files) == 0 {
 				m.State = "ApplyChanges"
+				return m, m.applyChanges()
 			} else {
 				m.State = "ActionSelection"
 				m.ActionSelector = modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, filepath.Base(m.Files[0]), m.SpeedSelector.Selected)
@@ -113,6 +133,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.LabelType = append(m.LabelType, m.LabelInput.IsLabel)
 				if len(m.Labels) == len(m.Files) {
 					m.State = "ApplyChanges"
+					return m, m.applyChanges()
 				} else {
 					m.LabelInput = modelutils.NewLabelInput(filepath.Base(m.Files[counter]))
 					counter++
@@ -128,27 +149,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.Labels = append(m.Labels, m.LabelInput.Input)
 				}
 				m.State = "ApplyChanges"
+				return m, m.applyChanges()
 			}
 			return m, cmd
 		}
 
 	case "ApplyChanges":
-		err := m.applyChanges()
-		m.Error = err
-		m.State = "Final"
+		return m, m.applyChanges()
+
 	case "Final":
-
-		return m, tea.Quit // Quit the program after applying changes
-
+		return m, nil
 	}
+
 	return m, nil
 }
 
 // View renders the view based on the current state
 func (m Model) View() string {
-	if m.Error != nil {
-		return fmt.Sprintf("An error occurred: %v", m.Error)
-	}
 	switch m.State {
 	case "FileSelection":
 		return m.FilesSelector.View()
@@ -158,41 +175,50 @@ func (m Model) View() string {
 		return m.ActionSelector.View()
 	case "LabelInput":
 		return m.LabelInput.View()
+	case "ApplyChanges":
+		return "Applying changes..."
+	case "Final":
+		if m.Error != nil {
+			return modelutils.Paint("red").Render(fmt.Sprintf("An error occurred: %v\nPress any key to exit.", m.Error))
+		}
+		return "Changes applied successfully!\nPress any key to exit."
 	}
 	return ""
 }
 
 // applyChanges applies changes to selected files based on user inputs
-func (m *Model) applyChanges() error {
-	for i := 0; i < len(m.Files); i++ {
-		currentFilePath, err := AbsToRel(m.Files[i])
-		if err != nil {
-			return fmt.Errorf("failed to convert to relative path: %w", err)
-		}
-		if !m.LabelType[i] {
-			conf := modfile.Config{
-				Filename: currentFilePath,
-				LineNum:  m.Labels[i],
-				Action:   m.Actions[i],
+func (m *Model) applyChanges() tea.Cmd {
+	return func() tea.Msg {
+		for i := 0; i < len(m.Files); i++ {
+			currentFilePath, err := AbsToRel(m.Files[i])
+			if err != nil {
+				return applyChangesMsg{err: fmt.Errorf("failed to convert to relative path: %w", err)}
 			}
-			err = modfile.ChangeFile(conf)
-		} else {
-			parts := strings.Split(m.Labels[i], ";")
-			conf := modfile.Config{
-				Filename:   currentFilePath,
-				StartLabel: parts[0],
-				EndLabel:   parts[1],
-				Action:     m.Actions[i],
+			if !m.LabelType[i] {
+				conf := modfile.Config{
+					Filename: currentFilePath,
+					LineNum:  m.Labels[i],
+					Action:   m.Actions[i],
+				}
+				err = modfile.ChangeFile(conf)
+			} else {
+				parts := strings.Split(m.Labels[i], ";")
+				conf := modfile.Config{
+					Filename:   currentFilePath,
+					StartLabel: parts[0],
+					EndLabel:   parts[1],
+					Action:     m.Actions[i],
+				}
+				err = modfile.ChangeFile(conf)
 			}
-			err = modfile.ChangeFile(conf)
+
+			if err != nil {
+				return applyChangesMsg{err: fmt.Errorf("failed to apply changes to file %s: %w", m.Files[i], err)}
+			}
 		}
 
-		if err != nil {
-			return fmt.Errorf("failed to apply changes to file %s: %w", m.Files[i], err)
-		}
+		return applyChangesMsg{err: nil}
 	}
-
-	return nil
 }
 
 // Helper function to convert absolute path to relative path

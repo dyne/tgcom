@@ -60,23 +60,26 @@ func (m LabelInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m LabelInput) View() string {
+	if m.Error != nil {
+		return Paint("red").Render(fmt.Sprintf("An error occurred: %v", m.Error))
+	}
 	flash := ""
 	if m.flash {
-		flash = paint("green").Render("▎")
+		flash = Paint("green").Render("▎")
 	}
 
-	s := paint("silver").Render("Type below the section to modify. You can insert your start label\nand your end label using the syntax 'start';'end' or you can modify\n a single line by entering the line number or a range of lines using the syntax x-y") + "\n\n"
+	s := Paint("silver").Render("Type below the section to modify. You can insert your start label\nand your end label using the syntax 'start';'end' or you can modify\n a single line by entering the line number or a range of lines using the syntax x-y") + "\n\n"
 	if m.File != "" {
-		s += paint("green").Render(m.File+": ✏ "+m.Input) + flash + "\n"
+		s += Paint("green").Render(m.File+": ✏ "+m.Input) + flash + "\n"
 	} else {
-		s += paint("green").Render("✏ "+m.Input) + flash + "\n"
+		s += Paint("green").Render("✏ "+m.Input) + flash + "\n"
 	}
 
 	if m.Error != nil {
-		s += paint("red").Render("\nError: "+m.Error.Error()) + "\n"
+		s += Paint("red").Render("\nError: "+m.Error.Error()) + "\n"
 	}
 
-	s += paint("silver").Render("\n 'q' to quit     'enter' to select the lines/labels indicated\n '↑' to go up\n '↓' to go down")
+	s += Paint("silver").Render("\n 'q' to quit     'enter' to select the lines/labels indicated\n '↑' to go up\n '↓' to go down")
 	return s
 }
 
