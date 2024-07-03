@@ -18,6 +18,7 @@ type FilesSelector struct {
 	Done                bool
 	WindowHeight        int
 	Error               error
+	NoFileSelected      bool
 }
 
 func InitialModel(currentDir string, windowHeight int) FilesSelector {
@@ -77,6 +78,7 @@ func (m FilesSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		case "enter":
+			m.NoFileSelected = false
 			checkDir, err := IsDirectory(m.FilesAndDir[m.cursor])
 			if err != nil {
 				m.Error = fmt.Errorf("error checking directory: %w", err)
@@ -103,7 +105,11 @@ func (m FilesSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Quit
 			}
 		case "x":
-			m.Done = true
+			if len(m.FilesPath) == 0 {
+				m.NoFileSelected = true
+			} else {
+				m.Done = true
+			}
 		}
 	}
 	return m, nil
@@ -116,6 +122,9 @@ func (m FilesSelector) View() string {
 
 	s := Paint("silver").Render("\n Select the files you want to modify...") + "\n"
 	s += Paint("silver").Render("\n Selected files till now:") + "\n"
+	if m.NoFileSelected {
+		s += Paint("red").Render("\n No file selected. Please select at least one file or quit.") + "\n"
+	}
 	for i := 0; i < len(m.FilesPath); i++ {
 		s += fmt.Sprintf(" %s\n", Paint("green").Render(m.FilesPath[i]))
 	}
