@@ -34,25 +34,26 @@ func (m LabelInput) Init() tea.Cmd {
 func (m LabelInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "ctrl+c", "q":
+		switch msg.Type {
+		case tea.KeyCtrlC, tea.KeyEscape:
 			return m, tea.Quit
 
-		case "enter":
+		case tea.KeyEnter:
 			if err := m.validateInput(); err != nil {
 				m.Error = err
 				return m, nil
 			}
 			m.Done = true
 
-		case "backspace":
+		case tea.KeyBackspace:
 			if len(m.Input) > 0 {
 				m.Input = m.Input[:len(m.Input)-1]
 			}
 
-		default:
+		case tea.KeyRunes:
 			m.Input += msg.String()
 		}
+
 	case tickMsg:
 		m.flash = !m.flash
 	}
@@ -79,7 +80,7 @@ func (m LabelInput) View() string {
 		s += Paint("red").Render("\nError: "+m.Error.Error()) + "\n"
 	}
 
-	s += Paint("silver").Render("\n 'q' to quit     'enter' to select the lines/labels indicated\n '↑' to go up\n '↓' to go down")
+	s += Paint("silver").Render("\n 'ctrl +c' to quit     'enter' to select the lines/labels indicated\n '↑' to go up\n '↓' to go down")
 	return s
 }
 
