@@ -387,6 +387,8 @@ func TestSelectCommentChars(t *testing.T) {
 	}{
 		{"testfile.go", "//", false},
 		{"testfile.false", "", true},
+		{"testfile.zen", "#", false},
+		{"testfile.slang", "#", false},
 	}
 
 	for _, tt := range tests {

@@ -370,6 +370,10 @@ func selectCommentChars(filename, lang string) (string, error) {
 			return CommentChars["vhdl"], nil
 		case ".v", ".sv":
 			return CommentChars["verilog"], nil
+		case ".slang":
+			return CommentChars["slangroom"], nil
+		case ".zen":
+			return CommentChars["zenroom"], nil
 		case ".html":
 			return CommentChars["html"], nil
 		default:
@@ -406,6 +410,8 @@ var CommentChars = map[string]string{
 	"lua":         "--",
 	"erlang":      "%",
 	"elixir":      "#",
+	"zenroom":     "#",
+	"slangroom":   "#",
 	"ts":          "//",
 	"vhdl":        "--",
 	"verilog":     "//",
