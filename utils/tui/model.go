@@ -122,6 +122,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "Fast mode":
 			newLabelInput, cmd := m.LabelInput.Update(msg)
 			m.LabelInput = newLabelInput.(modelutils.LabelInput)
+			m.LabelType = append(m.LabelType, m.LabelInput.IsLabel)
 			if m.LabelInput.Done {
 				for i := 0; i < len(m.Files); i++ {
 					m.Labels = append(m.Labels, m.LabelInput.Input)
@@ -133,10 +134,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case "ApplyChanges":
 		err := m.applyChanges()
-		if err != nil {
-			m.Error = err
-			return m, tea.Quit
-		}
+		m.Error = err
+		m.State = "Final"
+	case "Final":
+
 		return m, tea.Quit // Quit the program after applying changes
 
 	}
@@ -148,7 +149,6 @@ func (m Model) View() string {
 	if m.Error != nil {
 		return fmt.Sprintf("An error occurred: %v", m.Error)
 	}
-
 	switch m.State {
 	case "FileSelection":
 		return m.FilesSelector.View()
@@ -158,11 +158,8 @@ func (m Model) View() string {
 		return m.ActionSelector.View()
 	case "LabelInput":
 		return m.LabelInput.View()
-	case "ApplyChanges":
-		return "All changes applied successfully!"
-	default:
-		return ""
 	}
+	return ""
 }
 
 // applyChanges applies changes to selected files based on user inputs

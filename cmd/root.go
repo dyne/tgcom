@@ -4,9 +4,14 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
+	"runtime"
 	"strings"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/dyne/tgcom/utils/modfile"
+	"github.com/dyne/tgcom/utils/tui"
+	"github.com/dyne/tgcom/utils/tui/modelutils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -15,6 +20,7 @@ var (
 	FileToRead string
 	inputFlag  modfile.Config
 	remotePath string
+	Tui        bool
 )
 
 var rootCmd = &cobra.Command{
@@ -56,14 +62,14 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&inputFlag.EndLabel, "end-label", "e", "", "pass argument to end-label to modify lines up to end-label")
 	rootCmd.PersistentFlags().StringVarP(&inputFlag.Lang, "language", "L", "", "pass argument to language to specify the language of the input code")
 	rootCmd.PersistentFlags().StringVarP(&remotePath, "remote", "w", "", "pass remote user, host, and directory in the format user@host:/path/to/directory")
-
+	rootCmd.PersistentFlags().BoolVarP(&Tui, "tui", "t", false, "run the terminal user interface")
 	// Mark flags based on command name
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		if cmd.Name() != "server" {
 			cmd.MarkFlagsRequiredTogether("start-label", "end-label")
 			cmd.MarkFlagsMutuallyExclusive("line", "start-label")
 			cmd.MarkFlagsMutuallyExclusive("line", "end-label")
-			cmd.MarkFlagsOneRequired("file", "language", "remote")
+			cmd.MarkFlagsOneRequired("file", "language", "remote", "tui")
 			cmd.MarkFlagsMutuallyExclusive("file", "language")
 		}
 		return nil
@@ -84,44 +90,70 @@ func noFlagsGiven(cmd *cobra.Command) bool {
 }
 
 func ReadFlags(cmd *cobra.Command) {
-	if strings.Contains(FileToRead, ",") {
-		if cmd.Flags().Changed("line") {
-			fmt.Println("Warning: when passing multiple files to flag -f, don't use -l flag")
+	if Tui {
+		currentDir, err := os.Getwd()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error getting current working directory: %v\n", err)
+			os.Exit(1)
 		}
-		if cmd.Flags().Changed("start-label") && cmd.Flags().Changed("end-label") {
-			fileInfo := strings.Split(FileToRead, ",")
-			for i := 0; i < len(fileInfo); i++ {
-				inputFlag.Filename = fileInfo[i]
-				if err := modfile.ChangeFile(inputFlag); err != nil {
-					log.Fatal(err)
-				}
+
+		// Initialize your model with the current directory
+		model := tui.Model{
+			State:         "FileSelection",
+			FilesSelector: modelutils.InitialModel(currentDir, 20),
+		}
+		clearScreen()
+		// Bubble Tea program
+		p := tea.NewProgram(model)
+
+		// Start the program
+		if _, err := p.Run(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error starting Bubble Tea program: %v\n", err)
+			clearScreen()
+			os.Exit(1)
+		}
+		clearScreen()
+	} else {
+
+		if strings.Contains(FileToRead, ",") {
+			if cmd.Flags().Changed("line") {
+				fmt.Println("Warning: when passing multiple files to flag -f, don't use -l flag")
 			}
-		} else {
-			fileInfo := strings.Split(FileToRead, ",")
-			for i := 0; i < len(fileInfo); i++ {
-				if strings.Contains(fileInfo[i], ":") {
-					parts := strings.Split(fileInfo[i], ":")
-					if len(parts) != 2 {
-						log.Fatalf("invalid syntax. Use 'File:lines'")
-					}
-					inputFlag.Filename = parts[0]
-					inputFlag.LineNum = parts[1]
+			if cmd.Flags().Changed("start-label") && cmd.Flags().Changed("end-label") {
+				fileInfo := strings.Split(FileToRead, ",")
+				for i := 0; i < len(fileInfo); i++ {
+					inputFlag.Filename = fileInfo[i]
 					if err := modfile.ChangeFile(inputFlag); err != nil {
 						log.Fatal(err)
 					}
-				} else {
-					log.Fatalf("invalid syntax. Use 'File:lines'")
+				}
+			} else {
+				fileInfo := strings.Split(FileToRead, ",")
+				for i := 0; i < len(fileInfo); i++ {
+					if strings.Contains(fileInfo[i], ":") {
+						parts := strings.Split(fileInfo[i], ":")
+						if len(parts) != 2 {
+							log.Fatalf("invalid syntax. Use 'File:lines'")
+						}
+						inputFlag.Filename = parts[0]
+						inputFlag.LineNum = parts[1]
+						if err := modfile.ChangeFile(inputFlag); err != nil {
+							log.Fatal(err)
+						}
+					} else {
+						log.Fatalf("invalid syntax. Use 'File:lines'")
+					}
 				}
 			}
-		}
-	} else {
-		if cmd.Flags().Changed("line") || cmd.Flags().Changed("start-label") && cmd.Flags().Changed("end-label") {
-			inputFlag.Filename = FileToRead
-			if err := modfile.ChangeFile(inputFlag); err != nil {
-				log.Fatal(err)
-			}
 		} else {
-			log.Fatalf("Not specified what you want to modify: add -l flag or -s and -e flags")
+			if cmd.Flags().Changed("line") || cmd.Flags().Changed("start-label") && cmd.Flags().Changed("end-label") {
+				inputFlag.Filename = FileToRead
+				if err := modfile.ChangeFile(inputFlag); err != nil {
+					log.Fatal(err)
+				}
+			} else {
+				log.Fatalf("Not specified what you want to modify: add -l flag or -s and -e flags")
+			}
 		}
 	}
 }
@@ -170,4 +202,15 @@ func customUsageFunc(cmd *cobra.Command) error {
 		}
 	})
 	return nil
+}
+func clearScreen() {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("cmd", "/c", "cls")
+	default:
+		cmd = exec.Command("clear")
+	}
+	cmd.Stdout = os.Stdout
+	cmd.Run()
 }
