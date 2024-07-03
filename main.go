@@ -13,7 +13,7 @@ import (
 func main() {
 	//function main must be modified, but it shows that it works both with
 	//flags and as a tui
-	var mod int = 0
+	var mod int = 1
 	var num int
 	if mod == 1 {
 		cmd.Execute()
