@@ -108,8 +108,6 @@ func ReadFlags(cmd *cobra.Command) {
 
 		// Start the program
 		if _, err := p.Run(); err != nil {
-			fmt.Fprintf(os.Stderr, "Error starting Bubble Tea program: %v\n", err)
-			clearScreen()
 			os.Exit(1)
 		}
 		clearScreen()

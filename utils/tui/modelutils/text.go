@@ -16,6 +16,7 @@ type LabelInput struct {
 	IsLabel bool // Added to distinguish between labels and line numbers
 	flash   bool
 	Error   error
+	Back    bool
 }
 
 func NewLabelInput(File string) LabelInput {
@@ -52,6 +53,8 @@ func (m LabelInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case tea.KeyRunes:
 			m.Input += msg.String()
+		case tea.KeyEsc:
+			m.Back = true
 		}
 
 	case tickMsg:

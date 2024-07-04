@@ -33,6 +33,8 @@ type applyChangesMsg struct {
 	err error
 }
 
+var counter int
+
 // Init initializes the model
 func (m Model) Init() tea.Cmd {
 	return m.FilesSelector.Init()
@@ -76,38 +78,57 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case "ModeSelection":
 		newSpeedSelector, cmd := m.SpeedSelector.Update(msg)
 		m.SpeedSelector = newSpeedSelector.(modelutils.ModeSelector)
+		if m.SpeedSelector.Back {
+			m.State = "FileSelection"
+			m.FilesSelector.Done = false
+		}
 		if m.SpeedSelector.Done {
 			m.Files = m.FilesSelector.FilesPath
-			if len(m.Files) == 0 {
-				m.State = "ApplyChanges"
-				return m, m.applyChanges()
-			} else {
-				m.State = "ActionSelection"
-				m.ActionSelector = modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, filepath.Base(m.Files[0]), m.SpeedSelector.Selected)
-			}
+			m.State = "ActionSelection"
+			m.ActionSelector = modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, filepath.Base(m.Files[0]), m.SpeedSelector.Selected)
 		}
 		return m, cmd
 
 	case "ActionSelection":
 		switch m.SpeedSelector.Selected {
 		case "Slow mode":
-			counter := 1
 			newActionSelector, cmd := m.ActionSelector.Update(msg)
 			m.ActionSelector = newActionSelector.(modelutils.ModeSelector)
+			if m.ActionSelector.Back {
+				if len(m.Actions) == 0 {
+					m.SpeedSelector.Done = false
+					m.SpeedSelector.Selected = ""
+					m.State = "ModeSelection"
+				} else {
+					counter--
+					m.ActionSelector.Done = false
+					m.Actions = m.Actions[:len(m.Actions)-1]
+					m.State = "ActionSelection"
+					m.ActionSelector = modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, filepath.Base(m.Files[counter]), m.SpeedSelector.Selected)
+
+				}
+			}
 			if m.ActionSelector.Done {
 				m.Actions = append(m.Actions, m.ActionSelector.Selected)
 				if len(m.Actions) == len(m.Files) {
 					m.State = "LabelInput"
 					m.LabelInput = modelutils.NewLabelInput(filepath.Base(m.Files[0]))
+					counter = 0
 				} else {
-					m.ActionSelector = modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, filepath.Base(m.Files[counter]), m.SpeedSelector.Selected)
 					counter++
+					m.ActionSelector = modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, filepath.Base(m.Files[counter]), m.SpeedSelector.Selected)
+
 				}
 			}
 			return m, cmd
 		case "Fast mode":
 			newActionSelector, cmd := m.ActionSelector.Update(msg)
 			m.ActionSelector = newActionSelector.(modelutils.ModeSelector)
+			if m.ActionSelector.Back {
+				m.SpeedSelector.Done = false
+				m.SpeedSelector.Selected = ""
+				m.State = "ModeSelection"
+			}
 			if m.ActionSelector.Done {
 				for i := 0; i < len(m.Files); i++ {
 					m.Actions = append(m.Actions, m.ActionSelector.Selected)
@@ -121,9 +142,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case "LabelInput":
 		switch m.SpeedSelector.Selected {
 		case "Slow mode":
-			counter := 1
 			newLabelInput, cmd := m.LabelInput.Update(msg)
 			m.LabelInput = newLabelInput.(modelutils.LabelInput)
+			if m.LabelInput.Back {
+				if len(m.Labels) == 0 {
+					counter = len(m.Files) - 1
+					m.ActionSelector.Done = false
+					m.ActionSelector.Selected = ""
+					m.Actions = m.Actions[:len(m.Actions)-1]
+					m.State = "ActionSelection"
+				} else {
+					counter--
+					m.LabelInput.Done = false
+					m.Labels = m.Labels[:len(m.Labels)-1]
+					m.LabelType = m.LabelType[:len(m.LabelType)-1]
+					m.State = "LabelInput"
+					m.LabelInput = modelutils.NewLabelInput(filepath.Base(m.Files[counter]))
+				}
+			}
 			if m.LabelInput.Done {
 				if m.LabelInput.Error != nil {
 					m.Error = m.LabelInput.Error
@@ -135,18 +171,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.State = "ApplyChanges"
 					return m, m.applyChanges()
 				} else {
-					m.LabelInput = modelutils.NewLabelInput(filepath.Base(m.Files[counter]))
 					counter++
+					m.LabelInput = modelutils.NewLabelInput(filepath.Base(m.Files[counter]))
+
 				}
 			}
 			return m, cmd
 		case "Fast mode":
 			newLabelInput, cmd := m.LabelInput.Update(msg)
 			m.LabelInput = newLabelInput.(modelutils.LabelInput)
-			m.LabelType = append(m.LabelType, m.LabelInput.IsLabel)
+			if m.LabelInput.Back {
+				m.ActionSelector.Done = false
+				m.ActionSelector.Selected = ""
+				m.State = "ActionSelection"
+			}
 			if m.LabelInput.Done {
 				for i := 0; i < len(m.Files); i++ {
 					m.Labels = append(m.Labels, m.LabelInput.Input)
+					m.LabelType = append(m.LabelType, m.LabelInput.IsLabel)
 				}
 				m.State = "ApplyChanges"
 				return m, m.applyChanges()

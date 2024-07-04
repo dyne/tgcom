@@ -9,6 +9,7 @@ type ModeSelector struct {
 	Selected string
 	Done     bool
 	Speed    string
+	Back     bool
 }
 
 func NewModeSelector(choices []string, file string, speed string) ModeSelector {
@@ -40,6 +41,8 @@ func (m ModeSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.cursor < len(m.Choices)-1 {
 				m.cursor++
 			}
+		case "esc":
+			m.Back = true
 
 		case "enter":
 			m.Selected = m.Choices[m.cursor]
