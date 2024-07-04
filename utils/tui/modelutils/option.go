@@ -87,7 +87,7 @@ func (m ModeSelector) View() string {
 				s += cursor + " " + choice + "\n"
 			}
 		}
-		return s + Paint("silver").Render("\n 'q' to quit     'enter' to modify selected files\n '↑' to go up\n '↓' to go down")
+		return s + Paint("silver").Render("\n 'q' to quit     'enter' to modify selected files     'esc' to go back\n  '↑' to go up\n '↓' to go down")
 	}
 
 }

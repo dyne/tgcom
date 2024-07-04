@@ -83,7 +83,7 @@ func (m LabelInput) View() string {
 		s += Paint("red").Render("\nError: "+m.Error.Error()) + "\n"
 	}
 
-	s += Paint("silver").Render("\n 'ctrl +c' to quit     'enter' to select the lines/labels indicated\n '↑' to go up\n '↓' to go down")
+	s += Paint("silver").Render("\n 'ctrl +c' to quit     'enter' to select  the lines/labels indicated     'esc' to go back\n  '↑' to go up\n '↓' to go down")
 	return s
 }
 
