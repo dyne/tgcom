@@ -27,6 +27,9 @@ func Remove(slice []string, target string) []string {
 }
 
 func IsDirectory(path string) (bool, error) {
+	if path == "/" {
+		return true, nil
+	}
 	fileInfo, err := os.Stat(path)
 	if err != nil {
 		return false, err
@@ -35,15 +38,10 @@ func IsDirectory(path string) (bool, error) {
 }
 
 func GetParentDirectory(directoryPath string) (string, error) {
-	normalizedPath := filepath.Clean(directoryPath)
-
-	if normalizedPath == "/" {
-		return directoryPath, nil
-	}
 
 	parentDir := filepath.Dir(directoryPath)
-	if parentDir == directoryPath {
-		return "", fmt.Errorf("the given path '%s' is a root directory or invalid", directoryPath)
+	if parentDir == directoryPath || parentDir == "/" {
+		return "", fmt.Errorf("cannot move above the root directory")
 	}
 
 	return parentDir, nil
