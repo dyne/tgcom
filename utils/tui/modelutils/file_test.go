@@ -111,6 +111,29 @@ func TestFilesSelector(t *testing.T) {
 				assert.Equal(t, tempDir, m.CurrentDir)
 			},
 		},
+		{
+			name: "Confirm",
+			msg:  tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}},
+			setup: func(m *FilesSelector) {
+				*m = InitialModel(tempDir, 10)
+				m.FilesPath = []string{tempFile}
+			},
+			verify: func(t *testing.T, m FilesSelector) {
+				assert.Equal(t, tempDir, m.CurrentDir)
+				assert.True(t, m.Done)
+			},
+		},
+		{
+			name: "No file selected",
+			msg:  tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}},
+			setup: func(m *FilesSelector) {
+				*m = InitialModel(tempDir, 10)
+			},
+			verify: func(t *testing.T, m FilesSelector) {
+				assert.Equal(t, tempDir, m.CurrentDir)
+				assert.False(t, m.Done)
+			},
+		},
 	}
 
 	for _, tt := range tests {
