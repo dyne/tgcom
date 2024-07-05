@@ -70,8 +70,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.Error = m.FilesSelector.Error
 				return m, tea.Quit
 			}
-			m.State = "ModeSelection"
-			m.SpeedSelector = modelutils.NewModeSelector([]string{"Fast mode", "Slow mode"}, "", "")
+			m.Files = m.FilesSelector.FilesPath
+			if len(m.Files) == 1 {
+				m.SpeedSelector = modelutils.ModeSelector{
+					File:     m.Files[0],
+					Choices:  []string{"Fast mode", "Slow mode"},
+					Selected: "Fast mode",
+					Speed:    "",
+				}
+				m.State = "ActionSelection"
+				m.ActionSelector = modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, filepath.Base(m.Files[0]), m.SpeedSelector.Selected)
+			} else {
+
+				m.State = "ModeSelection"
+				m.SpeedSelector = modelutils.NewModeSelector([]string{"Fast mode", "Slow mode"}, "", "")
+			}
 		}
 		return m, cmd
 
@@ -83,7 +96,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.FilesSelector.Done = false
 		}
 		if m.SpeedSelector.Done {
-			m.Files = m.FilesSelector.FilesPath
 			m.State = "ActionSelection"
 			m.ActionSelector = modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, filepath.Base(m.Files[0]), m.SpeedSelector.Selected)
 		}
@@ -125,9 +137,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			newActionSelector, cmd := m.ActionSelector.Update(msg)
 			m.ActionSelector = newActionSelector.(modelutils.ModeSelector)
 			if m.ActionSelector.Back {
-				m.SpeedSelector.Done = false
-				m.SpeedSelector.Selected = ""
-				m.State = "ModeSelection"
+				if len(m.Files) == 1 {
+					m.State = "FileSelection"
+					m.FilesSelector.Done = false
+				} else {
+					m.SpeedSelector.Done = false
+					m.SpeedSelector.Selected = ""
+					m.State = "ModeSelection"
+				}
 			}
 			if m.ActionSelector.Done {
 				for i := 0; i < len(m.Files); i++ {
@@ -183,6 +200,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.LabelInput.Back {
 				m.ActionSelector.Done = false
 				m.ActionSelector.Selected = ""
+				m.Actions = nil
 				m.State = "ActionSelection"
 			}
 			if m.LabelInput.Done {
