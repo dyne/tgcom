@@ -58,6 +58,7 @@ func StartServer() {
 					if len(command) < 2 {
 						wish.Println(s, "Usage tgcom <directory>")
 						next(s)
+						return
 					}
 					dir = command[1]
 					next(s)

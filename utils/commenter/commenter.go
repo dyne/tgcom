@@ -1,12 +1,15 @@
 package commenter
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 // Comment adds a comment character to the beginning of the given line.
 func Comment(line string, char string) string {
 	// just for html
 	if char == "<!-- -->" {
-		return "<!--" + " " + line + " " + "-->"
+		return fmt.Sprintf("<!-- %s -->", line)
 	}
 	return char + " " + line
 }

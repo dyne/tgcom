@@ -33,8 +33,6 @@ type applyChangesMsg struct {
 	err error
 }
 
-var counter int
-
 // Init initializes the model
 func (m Model) Init() tea.Cmd {
 	return m.FilesSelector.Init()
@@ -112,11 +110,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.SpeedSelector.Selected = ""
 					m.State = "ModeSelection"
 				} else {
-					counter--
 					m.ActionSelector.Done = false
 					m.Actions = m.Actions[:len(m.Actions)-1]
 					m.State = "ActionSelection"
-					m.ActionSelector = modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, filepath.Base(m.Files[counter]), m.SpeedSelector.Selected)
+					m.ActionSelector = modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, filepath.Base(m.Files[len(m.Actions)]), m.SpeedSelector.Selected)
 
 				}
 			}
@@ -125,10 +122,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if len(m.Actions) == len(m.Files) {
 					m.State = "LabelInput"
 					m.LabelInput = modelutils.NewLabelInput(filepath.Base(m.Files[0]))
-					counter = 0
 				} else {
-					counter++
-					m.ActionSelector = modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, filepath.Base(m.Files[counter]), m.SpeedSelector.Selected)
+					m.ActionSelector = modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, filepath.Base(m.Files[len(m.Actions)]), m.SpeedSelector.Selected)
 
 				}
 			}
@@ -163,18 +158,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.LabelInput = newLabelInput.(modelutils.LabelInput)
 			if m.LabelInput.Back {
 				if len(m.Labels) == 0 {
-					counter = len(m.Files) - 1
 					m.ActionSelector.Done = false
 					m.ActionSelector.Selected = ""
 					m.Actions = m.Actions[:len(m.Actions)-1]
 					m.State = "ActionSelection"
 				} else {
-					counter--
 					m.LabelInput.Done = false
 					m.Labels = m.Labels[:len(m.Labels)-1]
 					m.LabelType = m.LabelType[:len(m.LabelType)-1]
 					m.State = "LabelInput"
-					m.LabelInput = modelutils.NewLabelInput(filepath.Base(m.Files[counter]))
+					m.LabelInput = modelutils.NewLabelInput(filepath.Base(m.Files[len(m.Labels)]))
 				}
 			}
 			if m.LabelInput.Done {
@@ -188,8 +181,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.State = "ApplyChanges"
 					return m, m.applyChanges()
 				} else {
-					counter++
-					m.LabelInput = modelutils.NewLabelInput(filepath.Base(m.Files[counter]))
+					m.LabelInput = modelutils.NewLabelInput(filepath.Base(m.Files[len(m.Labels)]))
 
 				}
 			}
