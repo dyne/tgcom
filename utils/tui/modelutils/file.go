@@ -18,6 +18,7 @@ type FilesSelector struct {
 	Done                bool
 	WindowHeight        int
 	Error               error
+	NoFileSelected      bool
 }
 
 func InitialModel(currentDir string, windowHeight int) FilesSelector {
@@ -77,13 +78,18 @@ func (m FilesSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		case "enter":
+			m.NoFileSelected = false
 			checkDir, err := IsDirectory(m.FilesAndDir[m.cursor])
 			if err != nil {
 				m.Error = fmt.Errorf("error checking directory: %w", err)
 				return m, tea.Quit
 			}
 			if checkDir {
-				moveToNextDir(&m, m.FilesAndDir[m.cursor])
+				err := moveToNextDir(&m, m.FilesAndDir[m.cursor])
+				if err != nil {
+					m.Error = fmt.Errorf("error checking directory: %w", err)
+					return m, tea.Quit
+				}
 			} else {
 				if Contains(m.FilesPath, m.FilesAndDir[m.cursor]) {
 					m.FilesPath = Remove(m.FilesPath, m.FilesAndDir[m.cursor])
@@ -93,9 +99,17 @@ func (m FilesSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.SelectedFilesAndDir[m.cursor] = !m.SelectedFilesAndDir[m.cursor]
 			}
 		case "esc":
-			moveToPreviousDir(&m)
+			err := moveToPreviousDir(&m)
+			if err != nil {
+				m.Error = fmt.Errorf("error moving back: %w", err)
+				return m, tea.Quit
+			}
 		case "x":
-			m.Done = true
+			if len(m.FilesPath) == 0 {
+				m.NoFileSelected = true
+			} else {
+				m.Done = true
+			}
 		}
 	}
 	return m, nil
@@ -103,13 +117,16 @@ func (m FilesSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m FilesSelector) View() string {
 	if m.Error != nil {
-		return paint("red").Render(fmt.Sprintf("An error occurred: %v", m.Error))
+		return Paint("red").Render(fmt.Sprintf("An error occurred: %v", m.Error))
 	}
 
-	s := paint("silver").Render("\n Select the files you want to modify...") + "\n"
-	s += paint("silver").Render("\n Selected files till now:") + "\n"
+	s := Paint("silver").Render("\n Select the files you want to modify...") + "\n"
+	s += Paint("silver").Render("\n Selected files till now:") + "\n"
+	if m.NoFileSelected {
+		s += Paint("red").Render("\n No file selected. Please select at least one file or quit.") + "\n"
+	}
 	for i := 0; i < len(m.FilesPath); i++ {
-		s += fmt.Sprintf(" %s\n", paint("green").Render(m.FilesPath[i]))
+		s += fmt.Sprintf(" %s\n", Paint("green").Render(m.FilesPath[i]))
 	}
 	s += "\n"
 
@@ -118,28 +135,28 @@ func (m FilesSelector) View() string {
 		checkDir, err := IsDirectory(choice)
 		if err != nil {
 			m.Error = fmt.Errorf("error checking directory: %w", err)
-			return paint("red").Render(fmt.Sprintf("An error occurred: %v", m.Error))
+			return Paint("red").Render(fmt.Sprintf("An error occurred: %v", m.Error))
 		}
 		if checkDir {
-			choice = paint("blue").Render("❒ " + choice)
+			choice = Paint("blue").Render("❒ " + choice)
 		} else if Contains(m.FilesPath, choice) {
-			choice = paint("lime").Render("❒ " + choice)
+			choice = Paint("lime").Render("❒ " + choice)
 		} else {
-			choice = paint("silver").Render("❒ " + choice)
+			choice = Paint("silver").Render("❒ " + choice)
 		}
 
 		cursor := " "
 		if m.cursor == i {
-			cursor = paint("red").Render(" ➪")
+			cursor = Paint("red").Render(" ➪")
 		}
 
 		s += fmt.Sprintf("%s %s\n", cursor, choice)
 	}
-	s += paint("silver").Render("\n 'q' to quit      'esc' to move to parent directory\n '↑' to go up     'x' to modify selected files\n '↓' to go down   'enter' to select pointed file/move to pointed sub folder")
+	s += Paint("silver").Render("\n 'q' to quit      'esc' to move to parent directory\n '↑' to go up     'x' to modify selected files\n '↓' to go down   'enter' to select pointed file/move to pointed sub folder")
 	return s
 }
 
-func paint(color string) lipgloss.Style {
+func Paint(color string) lipgloss.Style {
 	switch color {
 	case "lime":
 		lime := lipgloss.Color("#00FF00")
