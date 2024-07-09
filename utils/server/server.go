@@ -31,13 +31,13 @@ var (
 	dir         string
 )
 
-func StartServer() {
+func StartServer(port string) {
 	withHostKey := wish.WithHostKeyPath(pathHostKey)
 	if pem, ok := os.LookupEnv(envHostKey); ok {
 		withHostKey = wish.WithHostKeyPEM([]byte(pem))
 	}
 	srv, err := wish.NewServer(
-		wish.WithAddress(":2222"),
+		wish.WithAddress(":"+port),
 		wish.WithMiddleware(
 			bm.Middleware(func(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 				pty, _, _ := s.Pty()

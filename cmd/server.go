@@ -23,11 +23,13 @@ var serverCmd = &cobra.Command{
 	Short: "Start the SSH server",
 	Long:  `Start the SSH server that allows remote interactions with tgcom.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		server.StartServer()
+		server.StartServer(port)
 	},
 }
+var port string
 
 func init() {
+	serverCmd.PersistentFlags().StringVarP(&port, "port", "p", "2222", "Specify the port number to use for connecting to the server. This option allows you to override the default port, which 2222.")
 	// Register the server command
 	rootCmd.AddCommand(serverCmd)
 }
@@ -50,7 +52,7 @@ func executeRemoteCommand(remotePath string) {
 	dir := pathParts[1]
 
 	sshCmd := "ssh"
-	sshArgs := []string{"-t", "-p", "2222", userHost + "@" + host, "tgcom", dir}
+	sshArgs := []string{"-t", "-p", port, userHost + "@" + host, "tgcom", dir}
 
 	// Start SSH command with PTY
 	if err := startSSHWithPTY(sshCmd, sshArgs); err != nil {
