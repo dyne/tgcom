@@ -9,6 +9,7 @@ require (
 	github.com/charmbracelet/ssh v0.0.0-20240604154955-a40c6a0d028f
 	github.com/charmbracelet/wish v1.4.0
 	github.com/creack/pty v1.1.21
+	github.com/kevinburke/ssh_config v1.2.0
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.9.0

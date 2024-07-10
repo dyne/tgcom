@@ -13,6 +13,7 @@ import (
 
 	"github.com/creack/pty"
 	"github.com/dyne/tgcom/utils/server"
+	"github.com/kevinburke/ssh_config"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -23,36 +24,58 @@ var serverCmd = &cobra.Command{
 	Short: "Start the SSH server",
 	Long:  `Start the SSH server that allows remote interactions with tgcom.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		server.StartServer(port)
+		server.StartServer(serverPort)
 	},
 }
-var port string
+var serverPort string
 
 func init() {
-	serverCmd.PersistentFlags().StringVarP(&port, "port", "p", "2222", "Specify the port number to use for connecting to the server. This option allows you to override the default port, which 2222.")
+	serverCmd.PersistentFlags().StringVarP(&serverPort, "port", "p", "2222", "Specify the port number to use for connecting to the server. This option allows you to override the default port, which 2222.")
 	// Register the server command
 	rootCmd.AddCommand(serverCmd)
 }
 
 func executeRemoteCommand(remotePath string) {
-	parts := strings.SplitN(remotePath, "@", 2)
-	if len(parts) != 2 {
-		fmt.Println("Invalid format. Usage: tgcom -w user@remote:/path/folder")
-		os.Exit(1)
-	}
+	var userHost, dir, sshPort string
 
-	userHost := parts[0]
-	pathParts := strings.SplitN(parts[1], ":", 2)
-	if len(pathParts) != 2 {
-		fmt.Println("Invalid format. Usage: tgcom -w user@remote:/path/folder")
-		os.Exit(1)
-	}
+	if strings.Contains(remotePath, ":") && !strings.Contains(remotePath, "@") {
+		// Using SSH config alias format
+		parts := strings.SplitN(remotePath, ":", 2)
+		if len(parts) != 2 {
+			fmt.Println("Invalid format. Usage: tgcom config:path/to/folder")
+			os.Exit(1)
+		}
+		configAlias := parts[0]
+		dir = parts[1]
 
-	host := pathParts[0]
-	dir := pathParts[1]
+		userHost = configAlias
+		sshPort = ssh_config.Get(configAlias, "Port")
+		if sshPort == "" {
+			sshPort = port
+		}
+	} else {
+		// Using user@host:/path format
+		parts := strings.SplitN(remotePath, "@", 2)
+		if len(parts) != 2 {
+			fmt.Println("Invalid format. Usage: tgcom -w user@remote:/path/folder or tgcom config:path/to/folder")
+			os.Exit(1)
+		}
+
+		userHost = parts[0]
+		pathParts := strings.SplitN(parts[1], ":", 2)
+		if len(pathParts) != 2 {
+			fmt.Println("Invalid format. Usage: tgcom -w user@remote:/path/folder or tgcom config:path/to/folder")
+			os.Exit(1)
+		}
+
+		host := pathParts[0]
+		dir = pathParts[1]
+		sshPort = port
+		userHost = fmt.Sprintf("%s@%s", userHost, host)
+	}
 
 	sshCmd := "ssh"
-	sshArgs := []string{"-t", "-p", port, userHost + "@" + host, "tgcom", dir}
+	sshArgs := []string{"-t", "-p", sshPort, userHost, "tgcom", dir}
 
 	// Start SSH command with PTY
 	if err := startSSHWithPTY(sshCmd, sshArgs); err != nil {
