@@ -102,7 +102,7 @@ func ReadFlags(cmd *cobra.Command) {
 		// Initialize your model with the current directory
 		model := tui.Model{
 			State:         "FileSelection",
-			FilesSelector: modelutils.InitialModel(currentDir, 20),
+			FilesSelector: modelutils.InitialModel(currentDir, 20, 20),
 		}
 		clearScreen()
 		// Bubble Tea program
