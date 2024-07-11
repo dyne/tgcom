@@ -21,6 +21,7 @@ var (
 	inputFlag  modfile.Config
 	remotePath string
 	Tui        bool
+	port       string
 )
 
 var rootCmd = &cobra.Command{
@@ -62,6 +63,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&inputFlag.EndLabel, "end-label", "e", "", "pass argument to end-label to modify lines up to end-label")
 	rootCmd.PersistentFlags().StringVarP(&inputFlag.Lang, "language", "L", "", "pass argument to language to specify the language of the input code")
 	rootCmd.PersistentFlags().StringVarP(&remotePath, "remote", "w", "", "pass remote user, host, and directory in the format user@host:/path/to/directory")
+	rootCmd.PersistentFlags().StringVarP(&port, "port", "p", "", "Specify the port number to use for connecting to the server. This option allows you to override the default port, which 2222.")
 	rootCmd.PersistentFlags().BoolVarP(&Tui, "tui", "t", false, "run the terminal user interface")
 	// Mark flags based on command name
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
@@ -100,7 +102,7 @@ func ReadFlags(cmd *cobra.Command) {
 		// Initialize your model with the current directory
 		model := tui.Model{
 			State:         "FileSelection",
-			FilesSelector: modelutils.InitialModel(currentDir, 20),
+			FilesSelector: modelutils.InitialModel(currentDir, 20, 20),
 		}
 		clearScreen()
 		// Bubble Tea program

@@ -13,7 +13,7 @@ import (
 
 func TestModel(t *testing.T) {
 	t.Run("Init", func(t *testing.T) {
-		model := Model{FilesSelector: modelutils.InitialModel(".", 10)}
+		model := Model{FilesSelector: modelutils.InitialModel(".", 10, 10)}
 		cmd := model.Init()
 		assert.Nil(t, cmd)
 	})
@@ -32,7 +32,7 @@ func TestModel(t *testing.T) {
 				name: "FileSelection to ModeSelection",
 				model: Model{
 					State:         "FileSelection",
-					FilesSelector: modelutils.InitialModel(".", 10),
+					FilesSelector: modelutils.InitialModel(".", 10, 10),
 				},
 				setup: func(m *Model) {
 					m.FilesSelector.FilesPath = []string{"path/test/file1", "path/test/file2"}
@@ -51,7 +51,7 @@ func TestModel(t *testing.T) {
 				name: "FileSelection to ActionSelection",
 				model: Model{
 					State:         "FileSelection",
-					FilesSelector: modelutils.InitialModel(".", 10),
+					FilesSelector: modelutils.InitialModel(".", 10, 10),
 				},
 				setup: func(m *Model) {
 					m.FilesSelector.FilesPath = []string{"path/test/file1"}
@@ -69,7 +69,7 @@ func TestModel(t *testing.T) {
 				name: "No file selected",
 				model: Model{
 					State:         "FileSelection",
-					FilesSelector: modelutils.InitialModel(".", 10),
+					FilesSelector: modelutils.InitialModel(".", 10, 10),
 				},
 				msg: tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}},
 				verify: func(t *testing.T, m Model) {
@@ -156,7 +156,7 @@ func TestModel(t *testing.T) {
 				name: "ModeSelection to FileSelection",
 				model: Model{
 					State:         "ModeSelection",
-					FilesSelector: modelutils.InitialModel(".", 10),
+					FilesSelector: modelutils.InitialModel(".", 10, 10),
 					SpeedSelector: modelutils.NewModeSelector([]string{"Fast mode", "Slow mode"}, "", ""),
 					Files:         []string{"file1.txt", "file2.txt"},
 				},
@@ -174,7 +174,7 @@ func TestModel(t *testing.T) {
 				name: "ActionSelection to FileSelection",
 				model: Model{
 					State:          "ActionSelection",
-					FilesSelector:  modelutils.InitialModel(".", 10),
+					FilesSelector:  modelutils.InitialModel(".", 10, 10),
 					SpeedSelector:  modelutils.ModeSelector{Selected: "Fast mode"},
 					ActionSelector: modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, "", ""),
 					Files:          []string{"file1.txt"},
@@ -424,7 +424,7 @@ func TestModel(t *testing.T) {
 		tests := []viewTest{
 			{
 				name:     "FileSelection View",
-				model:    Model{State: "FileSelection", FilesSelector: modelutils.InitialModel(".", 10)},
+				model:    Model{State: "FileSelection", FilesSelector: modelutils.InitialModel(".", 10, 10)},
 				expected: "Select the files you want to modify",
 			},
 			{

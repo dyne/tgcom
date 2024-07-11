@@ -30,14 +30,14 @@ func TestFilesSelector(t *testing.T) {
 		{
 			name: "InitialModel",
 			setup: func(m *FilesSelector) {
-				*m = InitialModel(tempDir, 10)
+				*m = InitialModel(tempDir, 10, 10)
 			},
 			verify: func(t *testing.T, m FilesSelector) {
 				assert.Equal(t, tempDir, m.CurrentDir)
 				assert.Contains(t, m.FilesAndDir, subDir)
 				assert.NotNil(t, m.SelectedFilesAndDir)
 				assert.Equal(t, 0, m.cursor)
-				assert.Equal(t, 10, m.WindowHeight)
+				assert.Equal(t, 10, 10, m.WindowHeight)
 				assert.NoError(t, m.Error)
 			},
 		},
@@ -45,7 +45,7 @@ func TestFilesSelector(t *testing.T) {
 			name: "KeyDown",
 			msg:  tea.KeyMsg{Type: tea.KeyDown},
 			setup: func(m *FilesSelector) {
-				*m = InitialModel(tempDir, 10)
+				*m = InitialModel(tempDir, 10, 10)
 
 			},
 			verify: func(t *testing.T, m FilesSelector) {
@@ -56,7 +56,7 @@ func TestFilesSelector(t *testing.T) {
 			name: "KeyUp",
 			msg:  tea.KeyMsg{Type: tea.KeyUp},
 			setup: func(m *FilesSelector) {
-				*m = InitialModel(tempDir, 10)
+				*m = InitialModel(tempDir, 10, 10)
 				m.cursor = 1
 			},
 			verify: func(t *testing.T, m FilesSelector) {
@@ -67,7 +67,7 @@ func TestFilesSelector(t *testing.T) {
 			name: "EnterDirectory",
 			msg:  tea.KeyMsg{Type: tea.KeyEnter},
 			setup: func(m *FilesSelector) {
-				*m = InitialModel(tempDir, 10)
+				*m = InitialModel(tempDir, 10, 10)
 				m.cursor = 1
 			},
 			verify: func(t *testing.T, m FilesSelector) {
@@ -78,7 +78,7 @@ func TestFilesSelector(t *testing.T) {
 			name: "SelectFile",
 			msg:  tea.KeyMsg{Type: tea.KeyEnter},
 			setup: func(m *FilesSelector) {
-				*m = InitialModel(subDir, 10)
+				*m = InitialModel(subDir, 10, 10)
 				m.cursor = 0
 			},
 			verify: func(t *testing.T, m FilesSelector) {
@@ -89,7 +89,7 @@ func TestFilesSelector(t *testing.T) {
 			name: "Exit",
 			msg:  tea.KeyMsg{Type: tea.KeyCtrlC},
 			setup: func(m *FilesSelector) {
-				*m = InitialModel(tempDir, 10)
+				*m = InitialModel(tempDir, 10, 10)
 			},
 			verify: func(t *testing.T, m FilesSelector) {
 				// Call Update with the exit message
@@ -105,7 +105,7 @@ func TestFilesSelector(t *testing.T) {
 			name: "MoveToPreviousDir",
 			msg:  tea.KeyMsg{Type: tea.KeyEsc},
 			setup: func(m *FilesSelector) {
-				*m = InitialModel(subDir, 10)
+				*m = InitialModel(subDir, 10, 10)
 			},
 			verify: func(t *testing.T, m FilesSelector) {
 				assert.Equal(t, tempDir, m.CurrentDir)
@@ -115,7 +115,7 @@ func TestFilesSelector(t *testing.T) {
 			name: "Confirm",
 			msg:  tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}},
 			setup: func(m *FilesSelector) {
-				*m = InitialModel(tempDir, 10)
+				*m = InitialModel(tempDir, 10, 10)
 				m.FilesPath = []string{tempFile}
 			},
 			verify: func(t *testing.T, m FilesSelector) {
@@ -127,7 +127,7 @@ func TestFilesSelector(t *testing.T) {
 			name: "No file selected",
 			msg:  tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}},
 			setup: func(m *FilesSelector) {
-				*m = InitialModel(tempDir, 10)
+				*m = InitialModel(tempDir, 10, 10)
 			},
 			verify: func(t *testing.T, m FilesSelector) {
 				assert.Equal(t, tempDir, m.CurrentDir)
@@ -138,7 +138,7 @@ func TestFilesSelector(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			model := InitialModel(tempDir, 10)
+			model := InitialModel(tempDir, 10, 10)
 			if tt.setup != nil {
 				tt.setup(&model)
 			}
@@ -173,7 +173,7 @@ func TestFilesSelectorView(t *testing.T) {
 		{
 			name: "No selected file",
 			setup: func(m *FilesSelector) {
-				*m = InitialModel(tempDir, 10)
+				*m = InitialModel(tempDir, 10, 10)
 			},
 			verify: func(t *testing.T, view string) {
 				assert.Contains(t, view, "Select the files you want to modify...")
@@ -184,7 +184,7 @@ func TestFilesSelectorView(t *testing.T) {
 		{
 			name: " with  a selected file",
 			setup: func(m *FilesSelector) {
-				*m = InitialModel(tempDir, 10)
+				*m = InitialModel(tempDir, 10, 10)
 				m.cursor = 1
 				m.FilesPath = append(m.FilesPath, tempFile1)
 			},
@@ -198,7 +198,7 @@ func TestFilesSelectorView(t *testing.T) {
 		{
 			name: " inside subdir",
 			setup: func(m *FilesSelector) {
-				*m = InitialModel(tempDir, 10)
+				*m = InitialModel(tempDir, 10, 10)
 				msg := tea.KeyMsg{Type: tea.KeyEnter}
 				m.cursor = 1
 				newModel, _ := m.Update(msg)
@@ -212,7 +212,7 @@ func TestFilesSelectorView(t *testing.T) {
 		{
 			name: "Navigate above root directory",
 			setup: func(m *FilesSelector) {
-				*m = InitialModel("/", 10)
+				*m = InitialModel("/", 10, 10)
 				msg := tea.KeyMsg{Type: tea.KeyEsc}
 				m.cursor = 1
 				newModel, _ := m.Update(msg)
@@ -225,7 +225,7 @@ func TestFilesSelectorView(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			model := InitialModel(tempDir, 10)
+			model := InitialModel(tempDir, 10, 10)
 			if tt.setup != nil {
 				tt.setup(&model)
 			}

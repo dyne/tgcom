@@ -31,20 +31,20 @@ var (
 	dir         string
 )
 
-func StartServer() {
+func StartServer(port string) {
 	withHostKey := wish.WithHostKeyPath(pathHostKey)
 	if pem, ok := os.LookupEnv(envHostKey); ok {
 		withHostKey = wish.WithHostKeyPEM([]byte(pem))
 	}
 	srv, err := wish.NewServer(
-		wish.WithAddress(":2222"),
+		wish.WithAddress(":"+port),
 		wish.WithMiddleware(
 			bm.Middleware(func(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 				pty, _, _ := s.Pty()
 				// Initialize the file selector model with the directory argument
 				model := tui.Model{
 					State:         "FileSelection",
-					FilesSelector: modelutils.InitialModel(dir, pty.Window.Height-5), // Initialize the FilesSelector model with window height
+					FilesSelector: modelutils.InitialModel(dir, pty.Window.Height-5, pty.Window.Width-5), // Initialize the FilesSelector model with window height
 				}
 				if model.Error != nil {
 					wish.Println(s, model.Error.Error())
