@@ -44,7 +44,9 @@ func StartServer() {
 				// Initialize the file selector model with the directory argument
 				model := tui.Model{
 					State:         "FileSelection",
-					FilesSelector: modelutils.InitialModel(dir, pty.Window.Height-5, pty.Window.Width-5), // Initialize the FilesSelector model with window height
+					FilesSelector: modelutils.InitialModel(dir, pty.Window.Height-5, pty.Window.Width-5),
+					Height:        pty.Window.Height,
+					Width:         pty.Window.Width,
 				}
 				if model.Error != nil {
 					wish.Println(s, model.Error.Error())

@@ -48,14 +48,14 @@ func TestNewLabelInput(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			input := NewLabelInput(tt.file)
+			input := NewLabelInput(tt.file, 10, 10)
 			assert.Equal(t, tt.expected, input)
 		})
 	}
 }
 
 func TestInitLabelInput(t *testing.T) {
-	input := NewLabelInput("testfile")
+	input := NewLabelInput("testfile", 10, 10)
 	cmd := input.Init()
 	assert.NotNil(t, cmd)
 }
@@ -69,7 +69,7 @@ func TestUpdateLabelInput(t *testing.T) {
 	}{
 		{
 			name:    "Test KeyEnter with valid input label",
-			initial: setInput(NewLabelInput(""), "test;test"),
+			initial: setInput(NewLabelInput("", 10, 10), "test;test"),
 			msg:     tea.KeyMsg{Type: tea.KeyEnter},
 			expected: LabelInput{
 				File:    "",
@@ -80,7 +80,7 @@ func TestUpdateLabelInput(t *testing.T) {
 		},
 		{
 			name:    "Test KeyEnter with valid input lines",
-			initial: setInput(NewLabelInput(""), "1"),
+			initial: setInput(NewLabelInput("", 10, 10), "1"),
 			msg:     tea.KeyMsg{Type: tea.KeyEnter},
 			expected: LabelInput{
 				File:    "",
@@ -91,7 +91,7 @@ func TestUpdateLabelInput(t *testing.T) {
 		},
 		{
 			name:    "Test KeyEnter with invalid input",
-			initial: setInput(NewLabelInput(""), ""),
+			initial: setInput(NewLabelInput("", 10, 10), ""),
 			msg:     tea.KeyMsg{Type: tea.KeyEnter},
 			expected: LabelInput{
 				File:    "",
@@ -103,7 +103,7 @@ func TestUpdateLabelInput(t *testing.T) {
 		},
 		{
 			name:    "Test KeyBackspace",
-			initial: NewLabelInput(""),
+			initial: NewLabelInput("", 10, 10),
 			msg:     tea.KeyMsg{Type: tea.KeyBackspace},
 			expected: LabelInput{
 				File:    "",
@@ -114,7 +114,7 @@ func TestUpdateLabelInput(t *testing.T) {
 		},
 		{
 			name:    "Test KeyRunes",
-			initial: NewLabelInput(""),
+			initial: NewLabelInput("", 10, 10),
 			msg:     tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'t', 'e', 's', 't'}},
 			expected: LabelInput{
 				File:    "",
@@ -125,7 +125,7 @@ func TestUpdateLabelInput(t *testing.T) {
 		},
 		{
 			name:    "Test KeyEsc",
-			initial: NewLabelInput(""),
+			initial: NewLabelInput("", 10, 10),
 			msg:     tea.KeyMsg{Type: tea.KeyEsc},
 			expected: LabelInput{
 				File:    "",

@@ -112,6 +112,7 @@ func (m FilesSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.NoFileSelected = true
 			} else {
 				m.Done = true
+				m.WindowWidth /= 2
 			}
 		}
 	case tea.WindowSizeMsg:
@@ -123,6 +124,9 @@ func (m FilesSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *FilesSelector) doResize(msg tea.WindowSizeMsg) tea.Cmd {
 	m.WindowHeight = msg.Height
 	m.WindowWidth = msg.Width
+	if m.Done {
+		m.WindowHeight /= 2
+	}
 	return nil
 }
 

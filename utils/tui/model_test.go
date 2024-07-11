@@ -82,7 +82,7 @@ func TestModel(t *testing.T) {
 				name: "ModeSelection to ActionSelection",
 				model: Model{
 					State:         "ModeSelection",
-					SpeedSelector: modelutils.NewModeSelector([]string{"Fast mode", "Slow mode"}, "", ""),
+					SpeedSelector: modelutils.NewModeSelector([]string{"Fast mode", "Slow mode"}, "", "", 10, 10),
 					Files:         []string{"file1.txt", "file2.txt"},
 				},
 				msg: tea.KeyMsg{Type: tea.KeyEnter},
@@ -97,7 +97,7 @@ func TestModel(t *testing.T) {
 				model: Model{
 					State:          "ActionSelection",
 					SpeedSelector:  modelutils.ModeSelector{Selected: "Slow mode"},
-					ActionSelector: modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, "", "Slow mode"),
+					ActionSelector: modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, "", "Slow mode", 10, 10),
 					Files:          []string{"file1.txt", "file2.txt"},
 				},
 				msg: tea.KeyMsg{Type: tea.KeyEnter},
@@ -111,7 +111,7 @@ func TestModel(t *testing.T) {
 				model: Model{
 					State:          "ActionSelection",
 					SpeedSelector:  modelutils.ModeSelector{Selected: "Fast mode"},
-					ActionSelector: modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, "", "Fast mode"),
+					ActionSelector: modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, "", "Fast mode", 10, 10),
 					Files:          []string{"file1.txt"},
 				},
 				msg: tea.KeyMsg{Type: tea.KeyEnter},
@@ -125,7 +125,7 @@ func TestModel(t *testing.T) {
 				model: Model{
 					State:          "ActionSelection",
 					SpeedSelector:  modelutils.ModeSelector{Selected: "Slow mode"},
-					ActionSelector: modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, "", "Slow mode"),
+					ActionSelector: modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, "", "Slow mode", 10, 10),
 					Files:          []string{"file1.txt", "file2.txt"},
 					Actions:        []string{"test"},
 				},
@@ -157,7 +157,7 @@ func TestModel(t *testing.T) {
 				model: Model{
 					State:         "ModeSelection",
 					FilesSelector: modelutils.InitialModel(".", 10, 10),
-					SpeedSelector: modelutils.NewModeSelector([]string{"Fast mode", "Slow mode"}, "", ""),
+					SpeedSelector: modelutils.NewModeSelector([]string{"Fast mode", "Slow mode"}, "", "", 10, 10),
 					Files:         []string{"file1.txt", "file2.txt"},
 				},
 				msg: tea.KeyMsg{Type: tea.KeyEsc},
@@ -176,7 +176,7 @@ func TestModel(t *testing.T) {
 					State:          "ActionSelection",
 					FilesSelector:  modelutils.InitialModel(".", 10, 10),
 					SpeedSelector:  modelutils.ModeSelector{Selected: "Fast mode"},
-					ActionSelector: modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, "", ""),
+					ActionSelector: modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, "", "", 10, 10),
 					Files:          []string{"file1.txt"},
 				},
 				msg: tea.KeyMsg{Type: tea.KeyEsc},
@@ -192,7 +192,7 @@ func TestModel(t *testing.T) {
 				model: Model{
 					State:          "ActionSelection",
 					SpeedSelector:  modelutils.ModeSelector{Selected: "Fast mode"},
-					ActionSelector: modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, "", ""),
+					ActionSelector: modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, "", "", 10, 10),
 					Files:          []string{"file1.txt", "file2.txt"},
 				},
 				msg: tea.KeyMsg{Type: tea.KeyEsc},
@@ -208,7 +208,7 @@ func TestModel(t *testing.T) {
 				model: Model{
 					State:          "ActionSelection",
 					SpeedSelector:  modelutils.ModeSelector{Selected: "Slow mode"},
-					ActionSelector: modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, "", ""),
+					ActionSelector: modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, "", "", 10, 10),
 					Files:          []string{"file1.txt", "file2.txt"},
 				},
 				msg: tea.KeyMsg{Type: tea.KeyEsc},
@@ -223,7 +223,7 @@ func TestModel(t *testing.T) {
 				model: Model{
 					State:          "ActionSelection",
 					SpeedSelector:  modelutils.ModeSelector{Selected: "Slow mode"},
-					ActionSelector: modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, "", "Slow mode"),
+					ActionSelector: modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, "", "Slow mode", 10, 10),
 					Files:          []string{"file1.txt", "file2.txt"},
 					Actions:        []string{"test", "comment"},
 				},
@@ -240,7 +240,7 @@ func TestModel(t *testing.T) {
 				model: Model{
 					State:          "LabelInput",
 					SpeedSelector:  modelutils.ModeSelector{Selected: "Fast mode"},
-					ActionSelector: modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, "", "Fast mode"),
+					ActionSelector: modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, "", "Fast mode", 10, 10),
 					LabelInput:     modelutils.LabelInput{Input: "1-3"},
 					Files:          []string{"file1.txt"},
 				},
@@ -255,7 +255,7 @@ func TestModel(t *testing.T) {
 				model: Model{
 					State:          "LabelInput",
 					SpeedSelector:  modelutils.ModeSelector{Selected: "Slow mode"},
-					ActionSelector: modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, "", "Slow mode"),
+					ActionSelector: modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, "", "Slow mode", 10, 10),
 					LabelInput:     modelutils.LabelInput{Input: "1-3"},
 					Files:          []string{"file1.txt", "file2.txt"},
 					Actions:        []string{"test", "comment"},
@@ -429,17 +429,17 @@ func TestModel(t *testing.T) {
 			},
 			{
 				name:     "ModeSelection View",
-				model:    Model{State: "ModeSelection", SpeedSelector: modelutils.NewModeSelector([]string{"Fast mode", "Slow mode"}, "", "")},
+				model:    Model{State: "ModeSelection", SpeedSelector: modelutils.NewModeSelector([]string{"Fast mode", "Slow mode"}, "", "", 10, 10)},
 				expected: "Select 'Fast mode'",
 			},
 			{
 				name:     "ActionSelection View",
-				model:    Model{State: "ActionSelection", ActionSelector: modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, "", "Fast mode")},
+				model:    Model{State: "ActionSelection", ActionSelector: modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, "", "Fast mode", 10, 10)},
 				expected: "Select action",
 			},
 			{
 				name:     "LabelInput View",
-				model:    Model{State: "LabelInput", LabelInput: modelutils.NewLabelInput("")},
+				model:    Model{State: "LabelInput", LabelInput: modelutils.NewLabelInput("", 10, 10)},
 				expected: "Type below the section to modify",
 			},
 

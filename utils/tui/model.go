@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/dyne/tgcom/utils/modfile"
 	"github.com/dyne/tgcom/utils/tui/modelutils"
 )
@@ -20,6 +21,8 @@ type Model struct {
 	LabelType  []bool
 	CurrentDir string // Current directory for file selection
 	Error      error
+	Width      int
+	Height     int
 
 	// Models for different selection steps
 	FilesSelector  modelutils.FilesSelector
@@ -46,17 +49,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		if m.State == "Final" {
+			return m, tea.Quit
+		}
 	case applyChangesMsg:
 		if msg.err != nil {
 			m.Error = msg.err
 		}
 		m.State = "Final"
 		return m, nil
-
-	case tea.KeyMsg:
-		if m.State == "Final" {
-			return m, tea.Quit
-		}
 	}
 
 	switch m.State {
@@ -77,11 +79,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					Speed:    "",
 				}
 				m.State = "ActionSelection"
-				m.ActionSelector = modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, filepath.Base(m.Files[0]), m.SpeedSelector.Selected)
+				m.ActionSelector = modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, filepath.Base(m.Files[0]), m.SpeedSelector.Selected, m.Width, m.Height)
 			} else {
-
 				m.State = "ModeSelection"
-				m.SpeedSelector = modelutils.NewModeSelector([]string{"Fast mode", "Slow mode"}, "", "")
+				m.SpeedSelector = modelutils.NewModeSelector([]string{"Fast mode", "Slow mode"}, "", "", m.Width, m.Height)
 			}
 		}
 		return m, cmd
@@ -95,7 +96,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.SpeedSelector.Done {
 			m.State = "ActionSelection"
-			m.ActionSelector = modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, filepath.Base(m.Files[0]), m.SpeedSelector.Selected)
+			m.ActionSelector = modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, filepath.Base(m.Files[0]), m.SpeedSelector.Selected, m.Width, m.Height)
 		}
 		return m, cmd
 
@@ -113,18 +114,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.ActionSelector.Done = false
 					m.Actions = m.Actions[:len(m.Actions)-1]
 					m.State = "ActionSelection"
-					m.ActionSelector = modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, filepath.Base(m.Files[len(m.Actions)]), m.SpeedSelector.Selected)
-
+					m.ActionSelector = modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, filepath.Base(m.Files[len(m.Actions)]), m.SpeedSelector.Selected, m.Width, m.Height)
 				}
 			}
 			if m.ActionSelector.Done {
 				m.Actions = append(m.Actions, m.ActionSelector.Selected)
 				if len(m.Actions) == len(m.Files) {
 					m.State = "LabelInput"
-					m.LabelInput = modelutils.NewLabelInput(filepath.Base(m.Files[0]))
+					m.LabelInput = modelutils.NewLabelInput(filepath.Base(m.Files[0]), m.Width, m.Height)
 				} else {
-					m.ActionSelector = modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, filepath.Base(m.Files[len(m.Actions)]), m.SpeedSelector.Selected)
-
+					m.ActionSelector = modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, filepath.Base(m.Files[len(m.Actions)]), m.SpeedSelector.Selected, m.Width, m.Height)
 				}
 			}
 			return m, cmd
@@ -146,7 +145,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.Actions = append(m.Actions, m.ActionSelector.Selected)
 				}
 				m.State = "LabelInput"
-				m.LabelInput = modelutils.NewLabelInput("")
+				m.LabelInput = modelutils.NewLabelInput("", m.Width, m.Height)
 			}
 			return m, cmd
 		}
@@ -167,7 +166,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.Labels = m.Labels[:len(m.Labels)-1]
 					m.LabelType = m.LabelType[:len(m.LabelType)-1]
 					m.State = "LabelInput"
-					m.LabelInput = modelutils.NewLabelInput(filepath.Base(m.Files[len(m.Labels)]))
+					m.LabelInput = modelutils.NewLabelInput(filepath.Base(m.Files[len(m.Labels)]), m.Width, m.Height)
 				}
 			}
 			if m.LabelInput.Done {
@@ -181,8 +180,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.State = "ApplyChanges"
 					return m, m.applyChanges()
 				} else {
-					m.LabelInput = modelutils.NewLabelInput(filepath.Base(m.Files[len(m.Labels)]))
-
+					m.LabelInput = modelutils.NewLabelInput(filepath.Base(m.Files[len(m.Labels)]), m.Width, m.Height)
 				}
 			}
 			return m, cmd
@@ -218,24 +216,39 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View renders the view based on the current state
 func (m Model) View() string {
+	var rightPane string
+	fileSelectionPane := m.FilesSelector.View()
+	var halfWidth int
 	switch m.State {
 	case "FileSelection":
-		return m.FilesSelector.View()
+		return fileSelectionPane
 	case "ModeSelection":
-		return m.SpeedSelector.View()
+		halfWidth = m.SpeedSelector.Width
+		rightPane = m.SpeedSelector.View()
 	case "ActionSelection":
-		return m.ActionSelector.View()
+		halfWidth = m.ActionSelector.Width
+		rightPane = m.ActionSelector.View()
 	case "LabelInput":
-		return m.LabelInput.View()
+		halfWidth = m.LabelInput.Width
+		rightPane = m.LabelInput.View()
 	case "ApplyChanges":
-		return "Applying changes..."
+		rightPane = "Applying changes..."
 	case "Final":
 		if m.Error != nil {
-			return modelutils.Paint("red").Render(fmt.Sprintf("An error occurred: %v\nPress any key to exit.", m.Error))
+			rightPane = modelutils.Paint("red").Render(fmt.Sprintf("An error occurred: %v\nPress any key to exit.", m.Error))
+		} else {
+			rightPane = "Changes applied successfully!\nPress any key to exit."
 		}
-		return "Changes applied successfully!\nPress any key to exit."
 	}
-	return ""
+
+	// Use a style for the layout
+	layout := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		lipgloss.NewStyle().Width(halfWidth).Render(fileSelectionPane),
+		lipgloss.NewStyle().Width(halfWidth).Render(rightPane),
+	)
+
+	return layout
 }
 
 // applyChanges applies changes to selected files based on user inputs

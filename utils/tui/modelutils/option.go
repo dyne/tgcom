@@ -1,6 +1,9 @@
 package modelutils
 
-import tea "github.com/charmbracelet/bubbletea"
+import (
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+)
 
 type ModeSelector struct {
 	File     string
@@ -10,14 +13,18 @@ type ModeSelector struct {
 	Done     bool
 	Speed    string
 	Back     bool
+	Width    int
+	Height   int
 }
 
-func NewModeSelector(choices []string, file string, speed string) ModeSelector {
+func NewModeSelector(choices []string, file string, speed string, width, height int) ModeSelector {
 	return ModeSelector{
 		File:     file,
 		Choices:  choices,
 		Selected: "",
 		Speed:    speed,
+		Height:   height,
+		Width:    width / 2,
 	}
 }
 
@@ -48,6 +55,9 @@ func (m ModeSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.Selected = m.Choices[m.cursor]
 			m.Done = true
 		}
+	case tea.WindowSizeMsg:
+		m.Width = msg.Width / 2
+		m.Height = msg.Height
 	}
 	return m, nil
 }
@@ -62,7 +72,7 @@ func (m ModeSelector) View() string {
 			}
 			s += cursor + " " + choice + "\n"
 		}
-		return s
+		return lipgloss.Place(m.Width, m.Height, lipgloss.Left, lipgloss.Center, s)
 	} else {
 		s := ""
 		switch m.Speed {
@@ -87,7 +97,8 @@ func (m ModeSelector) View() string {
 				s += cursor + " " + choice + "\n"
 			}
 		}
-		return s + Paint("silver").Render("\n 'q' to quit     'enter' to modify selected files     'esc' to go back\n  '↑' to go up\n '↓' to go down")
+		s = s + Paint("silver").Render("\n 'q' to quit     'enter' to modify selected files     'esc' to go back\n  '↑' to go up\n '↓' to go down")
+		return lipgloss.Place(m.Width, m.Height, lipgloss.Left, lipgloss.Center, s)
 	}
 
 }
