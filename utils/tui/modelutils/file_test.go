@@ -83,6 +83,7 @@ func TestFilesSelector(t *testing.T) {
 			},
 			verify: func(t *testing.T, m FilesSelector) {
 				assert.Contains(t, m.FilesPath, tempFile)
+				assert.True(t, m.Done)
 			},
 		},
 		{
@@ -112,10 +113,11 @@ func TestFilesSelector(t *testing.T) {
 			},
 		},
 		{
-			name: "Confirm",
+			name: "Confirm multiple file",
 			msg:  tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}},
 			setup: func(m *FilesSelector) {
 				*m = InitialModel(tempDir, 10, 10)
+				m.MultipleSelection = true
 				m.FilesPath = []string{tempFile}
 			},
 			verify: func(t *testing.T, m FilesSelector) {

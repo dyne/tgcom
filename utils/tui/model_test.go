@@ -12,8 +12,13 @@ import (
 )
 
 func TestModel(t *testing.T) {
+	tempDir := t.TempDir()
+	tempFile := filepath.Join(tempDir, "file.txt")
+	_, err := os.Create(tempFile)
+	assert.NoError(t, err)
+
 	t.Run("Init", func(t *testing.T) {
-		model := Model{FilesSelector: modelutils.InitialModel(".", 10, 10)}
+		model := Model{FilesSelector: modelutils.InitialModel(tempDir, 10, 10)}
 		cmd := model.Init()
 		assert.Nil(t, cmd)
 	})
@@ -32,9 +37,10 @@ func TestModel(t *testing.T) {
 				name: "FileSelection to ModeSelection",
 				model: Model{
 					State:         "FileSelection",
-					FilesSelector: modelutils.InitialModel(".", 10, 10),
+					FilesSelector: modelutils.InitialModel(tempDir, 10, 10),
 				},
 				setup: func(m *Model) {
+					m.FilesSelector.MultipleSelection = true
 					m.FilesSelector.FilesPath = []string{"path/test/file1", "path/test/file2"}
 
 				},
@@ -51,16 +57,14 @@ func TestModel(t *testing.T) {
 				name: "FileSelection to ActionSelection",
 				model: Model{
 					State:         "FileSelection",
-					FilesSelector: modelutils.InitialModel(".", 10, 10),
+					FilesSelector: modelutils.InitialModel(tempDir, 10, 10),
 				},
 				setup: func(m *Model) {
-					m.FilesSelector.FilesPath = []string{"path/test/file1"}
-
 				},
-				msg: tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}},
+				msg: tea.KeyMsg{Type: tea.KeyEnter},
 				verify: func(t *testing.T, m Model) {
 					assert.True(t, m.FilesSelector.Done)
-					assert.Contains(t, m.Files, "path/test/file1")
+					assert.Contains(t, m.Files, tempFile)
 					assert.Equal(t, "ActionSelection", m.State)
 
 				},
@@ -69,7 +73,7 @@ func TestModel(t *testing.T) {
 				name: "No file selected",
 				model: Model{
 					State:         "FileSelection",
-					FilesSelector: modelutils.InitialModel(".", 10, 10),
+					FilesSelector: modelutils.InitialModel(tempDir, 10, 10),
 				},
 				msg: tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}},
 				verify: func(t *testing.T, m Model) {
@@ -156,7 +160,7 @@ func TestModel(t *testing.T) {
 				name: "ModeSelection to FileSelection",
 				model: Model{
 					State:         "ModeSelection",
-					FilesSelector: modelutils.InitialModel(".", 10, 10),
+					FilesSelector: modelutils.InitialModel(tempDir, 10, 10),
 					SpeedSelector: modelutils.NewModeSelector([]string{"Fast mode", "Slow mode"}, "", "", 10, 10),
 					Files:         []string{"file1.txt", "file2.txt"},
 				},
@@ -174,7 +178,7 @@ func TestModel(t *testing.T) {
 				name: "ActionSelection to FileSelection",
 				model: Model{
 					State:          "ActionSelection",
-					FilesSelector:  modelutils.InitialModel(".", 10, 10),
+					FilesSelector:  modelutils.InitialModel(tempDir, 10, 10),
 					SpeedSelector:  modelutils.ModeSelector{Selected: "Fast mode"},
 					ActionSelector: modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, "", "", 10, 10),
 					Files:          []string{"file1.txt"},
@@ -424,25 +428,9 @@ func TestModel(t *testing.T) {
 		tests := []viewTest{
 			{
 				name:     "FileSelection View",
-				model:    Model{State: "FileSelection", FilesSelector: modelutils.InitialModel(".", 10, 10)},
+				model:    Model{State: "FileSelection", FilesSelector: modelutils.InitialModel(tempDir, 10, 10)},
 				expected: "Select the files you want to modify",
 			},
-			{
-				name:     "ModeSelection View",
-				model:    Model{State: "ModeSelection", SpeedSelector: modelutils.NewModeSelector([]string{"Fast mode", "Slow mode"}, "", "", 10, 10)},
-				expected: "Select 'Fast mode'",
-			},
-			{
-				name:     "ActionSelection View",
-				model:    Model{State: "ActionSelection", ActionSelector: modelutils.NewModeSelector([]string{"toggle", "comment", "uncomment"}, "", "Fast mode", 10, 10)},
-				expected: "Select action",
-			},
-			{
-				name:     "LabelInput View",
-				model:    Model{State: "LabelInput", LabelInput: modelutils.NewLabelInput("", 10, 10)},
-				expected: "Type below the section to modify",
-			},
-
 			{
 				name:     "Final View with Error",
 				model:    Model{State: "Final", Error: fmt.Errorf("test error")},

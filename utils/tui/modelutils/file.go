@@ -21,6 +21,7 @@ type FilesSelector struct {
 	Error               error
 	NoFileSelected      bool
 	WindowWidth         int
+	MultipleSelection   bool
 }
 
 func InitialModel(currentDir string, windowHeight int, windowWidth int) FilesSelector {
@@ -66,6 +67,14 @@ func (m FilesSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
+		case " ":
+			if !m.MultipleSelection {
+				m.MultipleSelection = true
+			} else {
+				m.MultipleSelection = false
+				m.FilesPath = []string{}
+			}
+
 		case "up":
 			if m.cursor > 0 {
 				m.cursor--
@@ -98,6 +107,10 @@ func (m FilesSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.FilesPath = Remove(m.FilesPath, m.FilesAndDir[m.cursor])
 				} else {
 					m.FilesPath = append(m.FilesPath, m.FilesAndDir[m.cursor])
+					if !m.MultipleSelection {
+						m.Done = true
+						m.WindowWidth /= 2
+					}
 				}
 				m.SelectedFilesAndDir[m.cursor] = !m.SelectedFilesAndDir[m.cursor]
 			}
@@ -108,11 +121,13 @@ func (m FilesSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Quit
 			}
 		case "x":
-			if len(m.FilesPath) == 0 {
-				m.NoFileSelected = true
-			} else {
-				m.Done = true
-				m.WindowWidth /= 2
+			if m.MultipleSelection {
+				if len(m.FilesPath) == 0 {
+					m.NoFileSelected = true
+				} else {
+					m.Done = true
+					m.WindowWidth /= 2
+				}
 			}
 		}
 	case tea.WindowSizeMsg:
@@ -138,8 +153,9 @@ func (m FilesSelector) View() string {
 	// Help messages
 	helpMessages := []string{
 		"'q' to quit      'esc' to move to parent directory",
-		"'↑' to go up     'x' to modify selected files",
+		"'↑' to go up     'space' to select multiple files",
 		"'↓' to go down   'enter' to select pointed file/move to pointed sub folder",
+		"'x' to modify select files",
 	}
 
 	// File selection and error messages

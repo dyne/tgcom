@@ -132,6 +132,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.ActionSelector = newActionSelector.(modelutils.ModeSelector)
 			if m.ActionSelector.Back {
 				if len(m.Files) == 1 {
+					if !m.FilesSelector.MultipleSelection {
+						m.FilesSelector.FilesPath = []string{}
+					}
 					m.State = "FileSelection"
 					m.FilesSelector.Done = false
 				} else {
