@@ -27,6 +27,8 @@ func TestNewModeSelector(t *testing.T) {
 				Speed:    "",
 				Done:     false,
 				Back:     false,
+				Width:    5,
+				Height:   10,
 			},
 		},
 	}
@@ -65,6 +67,8 @@ func TestUpdate(t *testing.T) {
 			expected: ModeSelector{
 				Choices: []string{"Option1", "Option2"},
 				cursor:  0,
+				Width:   5,
+				Height:  10,
 			},
 		},
 		{
@@ -74,6 +78,8 @@ func TestUpdate(t *testing.T) {
 			expected: ModeSelector{
 				Choices: []string{"Option1", "Option2"},
 				cursor:  1,
+				Width:   5,
+				Height:  10,
 			},
 		},
 		{
@@ -85,6 +91,8 @@ func TestUpdate(t *testing.T) {
 				cursor:   0,
 				Selected: "Option1",
 				Done:     true,
+				Width:    5,
+				Height:   10,
 			},
 		},
 		{
@@ -95,6 +103,8 @@ func TestUpdate(t *testing.T) {
 				Choices: []string{"Option1", "Option2"},
 				cursor:  0,
 				Back:    true,
+				Width:   5,
+				Height:  10,
 			},
 		},
 		{
@@ -104,6 +114,8 @@ func TestUpdate(t *testing.T) {
 			expected: ModeSelector{
 				Choices: []string{"Option1", "Option2"},
 				cursor:  0,
+				Width:   5,
+				Height:  10,
 			},
 			cmdChecker: func(cmd tea.Cmd) {
 				if cmd != nil {

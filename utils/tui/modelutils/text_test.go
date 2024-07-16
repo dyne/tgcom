@@ -42,6 +42,8 @@ func TestNewLabelInput(t *testing.T) {
 				Input:   "",
 				Done:    false,
 				IsLabel: false,
+				Width:   5,
+				Height:  10,
 			},
 		},
 	}
@@ -76,6 +78,8 @@ func TestUpdateLabelInput(t *testing.T) {
 				Input:   "test;test",
 				Done:    true,
 				IsLabel: true,
+				Width:   5,
+				Height:  10,
 			},
 		},
 		{
@@ -87,6 +91,8 @@ func TestUpdateLabelInput(t *testing.T) {
 				Input:   "1",
 				Done:    true,
 				IsLabel: false,
+				Width:   5,
+				Height:  10,
 			},
 		},
 		{
@@ -99,6 +105,8 @@ func TestUpdateLabelInput(t *testing.T) {
 				Done:    false,
 				IsLabel: false,
 				Error:   fmt.Errorf("input does not match expected format (e.g., 'start';'end' or 'x-y' or single line number)"),
+				Width:   5,
+				Height:  10,
 			},
 		},
 		{
@@ -110,6 +118,8 @@ func TestUpdateLabelInput(t *testing.T) {
 				Input:   "",
 				Done:    false,
 				IsLabel: false,
+				Width:   5,
+				Height:  10,
 			},
 		},
 		{
@@ -121,6 +131,8 @@ func TestUpdateLabelInput(t *testing.T) {
 				Input:   "test",
 				Done:    false,
 				IsLabel: false,
+				Width:   5,
+				Height:  10,
 			},
 		},
 		{
@@ -133,6 +145,8 @@ func TestUpdateLabelInput(t *testing.T) {
 				Done:    false,
 				IsLabel: false,
 				Back:    true,
+				Width:   5,
+				Height:  10,
 			},
 		},
 	}
