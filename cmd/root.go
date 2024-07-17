@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strconv"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -96,11 +97,17 @@ func ReadFlags(cmd *cobra.Command) {
 			fmt.Fprintf(os.Stderr, "Error getting current working directory: %v\n", err)
 			os.Exit(1)
 		}
+		// Get terminal dimensions dynamically
+		termWidth, termHeight, err := getTerminalSize()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error getting terminal size: %v\n", err)
+			os.Exit(1)
+		}
 
 		// Initialize your model with the current directory
 		model := tui.Model{
 			State:         "FileSelection",
-			FilesSelector: modelutils.InitialModel(currentDir, 20, 20),
+			FilesSelector: modelutils.InitialModel(currentDir, termHeight, termWidth),
 		}
 		clearScreen()
 		// Bubble Tea program
@@ -211,4 +218,29 @@ func clearScreen() {
 	}
 	cmd.Stdout = os.Stdout
 	cmd.Run()
+}
+func getTerminalSize() (width, height int, err error) {
+	cmd := exec.Command("tput", "cols")
+	cmd.Stdin = os.Stdin
+	out, err := cmd.Output()
+	if err != nil {
+		return 0, 0, err
+	}
+	width, err = strconv.Atoi(strings.TrimSpace(string(out)))
+	if err != nil {
+		return 0, 0, err
+	}
+
+	cmd = exec.Command("tput", "lines")
+	cmd.Stdin = os.Stdin
+	out, err = cmd.Output()
+	if err != nil {
+		return 0, 0, err
+	}
+	height, err = strconv.Atoi(strings.TrimSpace(string(out)))
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return width, height, nil
 }
