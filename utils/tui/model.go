@@ -70,6 +70,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.Error = m.FilesSelector.Error
 				return m, tea.Quit
 			}
+			m.Width = m.FilesSelector.WindowWidth
+			m.Height = m.FilesSelector.WindowHeight
 			m.Files = m.FilesSelector.FilesPath
 			if len(m.Files) == 1 {
 				m.SpeedSelector = modelutils.ModeSelector{

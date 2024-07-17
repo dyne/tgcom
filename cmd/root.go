@@ -108,6 +108,8 @@ func ReadFlags(cmd *cobra.Command) {
 		model := tui.Model{
 			State:         "FileSelection",
 			FilesSelector: modelutils.InitialModel(currentDir, termHeight, termWidth),
+			Width:         termWidth,
+			Height:        termHeight,
 		}
 		clearScreen()
 		// Bubble Tea program

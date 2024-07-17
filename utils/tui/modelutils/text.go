@@ -80,7 +80,7 @@ func (m LabelInput) View() string {
 		flash = Paint("green").Render("▎")
 	}
 
-	s := Paint("silver").Render("Type below the section to modify. You can insert your start label\nand your end label using the syntax 'start';'end' or you can modify\n a single line by entering the line number or a range of lines using the syntax x-y") + "\n\n"
+	s := Paint("silver").Render("\n Type below the section to modify. You can insert your start label\nand your end label using the syntax 'start';'end' or you can modify\n a single line by entering the line number or a range of lines using the syntax x-y") + "\n\n"
 	if m.File != "" {
 		s += Paint("green").Render(m.File+": ✏ "+m.Input) + flash + "\n"
 	} else {
@@ -92,7 +92,7 @@ func (m LabelInput) View() string {
 	}
 
 	s += Paint("silver").Render("\n 'ctrl +c' to quit     'enter' to select  the lines/labels indicated     'esc' to go back\n  '↑' to go up\n '↓' to go down")
-	return lipgloss.Place(m.Width, m.Height, lipgloss.Left, lipgloss.Center, s)
+	return lipgloss.Place(m.Width, m.Height, lipgloss.Left, lipgloss.Top, s)
 }
 
 func StartTicker() tea.Cmd {

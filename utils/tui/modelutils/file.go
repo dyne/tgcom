@@ -109,7 +109,6 @@ func (m FilesSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.FilesPath = append(m.FilesPath, m.FilesAndDir[m.cursor])
 					if !m.MultipleSelection {
 						m.Done = true
-						m.WindowWidth /= 2
 					}
 				}
 				m.SelectedFilesAndDir[m.cursor] = !m.SelectedFilesAndDir[m.cursor]
@@ -126,7 +125,6 @@ func (m FilesSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.NoFileSelected = true
 				} else {
 					m.Done = true
-					m.WindowWidth /= 2
 				}
 			}
 		}
@@ -139,9 +137,6 @@ func (m FilesSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *FilesSelector) doResize(msg tea.WindowSizeMsg) tea.Cmd {
 	m.WindowHeight = msg.Height
 	m.WindowWidth = msg.Width
-	if m.Done {
-		m.WindowHeight /= 2
-	}
 	return nil
 }
 
