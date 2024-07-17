@@ -3,6 +3,7 @@ package modelutils
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -19,9 +20,11 @@ type FilesSelector struct {
 	WindowHeight        int
 	Error               error
 	NoFileSelected      bool
+	WindowWidth         int
+	MultipleSelection   bool
 }
 
-func InitialModel(currentDir string, windowHeight int) FilesSelector {
+func InitialModel(currentDir string, windowHeight int, windowWidth int) FilesSelector {
 	var filesAndDir []string
 	selectedFilesAndDir := make(map[int]bool)
 
@@ -47,6 +50,7 @@ func InitialModel(currentDir string, windowHeight int) FilesSelector {
 		FilesAndDir:         filesAndDir,
 		SelectedFilesAndDir: selectedFilesAndDir,
 		WindowHeight:        windowHeight,
+		WindowWidth:         windowWidth,
 	}
 }
 
@@ -63,6 +67,14 @@ func (m FilesSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
+		case " ":
+			if !m.MultipleSelection {
+				m.MultipleSelection = true
+			} else {
+				m.MultipleSelection = false
+				m.FilesPath = []string{}
+			}
+
 		case "up":
 			if m.cursor > 0 {
 				m.cursor--
@@ -95,6 +107,9 @@ func (m FilesSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.FilesPath = Remove(m.FilesPath, m.FilesAndDir[m.cursor])
 				} else {
 					m.FilesPath = append(m.FilesPath, m.FilesAndDir[m.cursor])
+					if !m.MultipleSelection {
+						m.Done = true
+					}
 				}
 				m.SelectedFilesAndDir[m.cursor] = !m.SelectedFilesAndDir[m.cursor]
 			}
@@ -105,14 +120,24 @@ func (m FilesSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Quit
 			}
 		case "x":
-			if len(m.FilesPath) == 0 {
-				m.NoFileSelected = true
-			} else {
-				m.Done = true
+			if m.MultipleSelection {
+				if len(m.FilesPath) == 0 {
+					m.NoFileSelected = true
+				} else {
+					m.Done = true
+				}
 			}
 		}
+	case tea.WindowSizeMsg:
+		return m, m.doResize(msg)
 	}
 	return m, nil
+}
+
+func (m *FilesSelector) doResize(msg tea.WindowSizeMsg) tea.Cmd {
+	m.WindowHeight = msg.Height
+	m.WindowWidth = msg.Width
+	return nil
 }
 
 func (m FilesSelector) View() string {
@@ -120,15 +145,25 @@ func (m FilesSelector) View() string {
 		return Paint("red").Render(fmt.Sprintf("An error occurred: %v", m.Error))
 	}
 
-	s := Paint("silver").Render("\n Select the files you want to modify...") + "\n"
-	s += Paint("silver").Render("\n Selected files till now:") + "\n"
+	// Help messages
+	helpMessages := []string{
+		"'q' to quit      'esc' to move to parent directory",
+		"'↑' to go up     'space' to select multiple files",
+		"'↓' to go down   'enter' to select pointed file/move to pointed sub folder",
+		"'x' to modify select files",
+	}
+
+	// File selection and error messages
+	var sb strings.Builder
+	sb.WriteString(Paint("silver").Render("\n Select the files you want to modify...") + "\n")
+	sb.WriteString(Paint("silver").Render("\n Selected files till now:") + "\n")
 	if m.NoFileSelected {
-		s += Paint("red").Render("\n No file selected. Please select at least one file or quit.") + "\n"
+		sb.WriteString(Paint("red").Render("\n No file selected. Please select at least one file or quit.") + "\n")
 	}
 	for i := 0; i < len(m.FilesPath); i++ {
-		s += fmt.Sprintf(" %s\n", Paint("green").Render(m.FilesPath[i]))
+		sb.WriteString(fmt.Sprintf(" %s\n", Paint("green").Render(m.FilesPath[i])))
 	}
-	s += "\n"
+	sb.WriteString("\n")
 
 	for i := m.scrollOffset; i < m.scrollOffset+m.WindowHeight && i < len(m.FilesAndDir); i++ {
 		choice := m.FilesAndDir[i]
@@ -150,10 +185,19 @@ func (m FilesSelector) View() string {
 			cursor = Paint("red").Render(" ➪")
 		}
 
-		s += fmt.Sprintf("%s %s\n", cursor, choice)
+		sb.WriteString(fmt.Sprintf("%s %s\n", cursor, choice))
 	}
-	s += Paint("silver").Render("\n 'q' to quit      'esc' to move to parent directory\n '↑' to go up     'x' to modify selected files\n '↓' to go down   'enter' to select pointed file/move to pointed sub folder")
-	return s
+
+	fileSelection := sb.String()
+
+	// Combine file selection with help messages
+	helpView := lipgloss.JoinVertical(lipgloss.Left, helpMessages...)
+	content := lipgloss.JoinVertical(lipgloss.Left, fileSelection, helpView)
+
+	// Place the content in the center of the screen
+	fullView := lipgloss.Place(m.WindowWidth, m.WindowHeight, lipgloss.Left, lipgloss.Left, content)
+
+	return fullView
 }
 
 func Paint(color string) lipgloss.Style {

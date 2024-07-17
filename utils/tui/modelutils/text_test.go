@@ -42,20 +42,22 @@ func TestNewLabelInput(t *testing.T) {
 				Input:   "",
 				Done:    false,
 				IsLabel: false,
+				Width:   5,
+				Height:  10,
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			input := NewLabelInput(tt.file)
+			input := NewLabelInput(tt.file, 10, 10)
 			assert.Equal(t, tt.expected, input)
 		})
 	}
 }
 
 func TestInitLabelInput(t *testing.T) {
-	input := NewLabelInput("testfile")
+	input := NewLabelInput("testfile", 10, 10)
 	cmd := input.Init()
 	assert.NotNil(t, cmd)
 }
@@ -69,29 +71,33 @@ func TestUpdateLabelInput(t *testing.T) {
 	}{
 		{
 			name:    "Test KeyEnter with valid input label",
-			initial: setInput(NewLabelInput(""), "test;test"),
+			initial: setInput(NewLabelInput("", 10, 10), "test;test"),
 			msg:     tea.KeyMsg{Type: tea.KeyEnter},
 			expected: LabelInput{
 				File:    "",
 				Input:   "test;test",
 				Done:    true,
 				IsLabel: true,
+				Width:   5,
+				Height:  10,
 			},
 		},
 		{
 			name:    "Test KeyEnter with valid input lines",
-			initial: setInput(NewLabelInput(""), "1"),
+			initial: setInput(NewLabelInput("", 10, 10), "1"),
 			msg:     tea.KeyMsg{Type: tea.KeyEnter},
 			expected: LabelInput{
 				File:    "",
 				Input:   "1",
 				Done:    true,
 				IsLabel: false,
+				Width:   5,
+				Height:  10,
 			},
 		},
 		{
 			name:    "Test KeyEnter with invalid input",
-			initial: setInput(NewLabelInput(""), ""),
+			initial: setInput(NewLabelInput("", 10, 10), ""),
 			msg:     tea.KeyMsg{Type: tea.KeyEnter},
 			expected: LabelInput{
 				File:    "",
@@ -99,33 +105,39 @@ func TestUpdateLabelInput(t *testing.T) {
 				Done:    false,
 				IsLabel: false,
 				Error:   fmt.Errorf("input does not match expected format (e.g., 'start';'end' or 'x-y' or single line number)"),
+				Width:   5,
+				Height:  10,
 			},
 		},
 		{
 			name:    "Test KeyBackspace",
-			initial: NewLabelInput(""),
+			initial: NewLabelInput("", 10, 10),
 			msg:     tea.KeyMsg{Type: tea.KeyBackspace},
 			expected: LabelInput{
 				File:    "",
 				Input:   "",
 				Done:    false,
 				IsLabel: false,
+				Width:   5,
+				Height:  10,
 			},
 		},
 		{
 			name:    "Test KeyRunes",
-			initial: NewLabelInput(""),
+			initial: NewLabelInput("", 10, 10),
 			msg:     tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'t', 'e', 's', 't'}},
 			expected: LabelInput{
 				File:    "",
 				Input:   "test",
 				Done:    false,
 				IsLabel: false,
+				Width:   5,
+				Height:  10,
 			},
 		},
 		{
 			name:    "Test KeyEsc",
-			initial: NewLabelInput(""),
+			initial: NewLabelInput("", 10, 10),
 			msg:     tea.KeyMsg{Type: tea.KeyEsc},
 			expected: LabelInput{
 				File:    "",
@@ -133,6 +145,8 @@ func TestUpdateLabelInput(t *testing.T) {
 				Done:    false,
 				IsLabel: false,
 				Back:    true,
+				Width:   5,
+				Height:  10,
 			},
 		},
 	}

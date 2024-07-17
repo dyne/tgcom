@@ -27,13 +27,15 @@ func TestNewModeSelector(t *testing.T) {
 				Speed:    "",
 				Done:     false,
 				Back:     false,
+				Width:    5,
+				Height:   10,
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			selector := NewModeSelector(tt.choices, tt.file, tt.speed)
+			selector := NewModeSelector(tt.choices, tt.file, tt.speed, 10, 10)
 			assert.Equal(t, tt.expected.File, selector.File)
 			assert.Equal(t, tt.expected.Choices, selector.Choices)
 			assert.Equal(t, tt.expected.Selected, selector.Selected)
@@ -45,7 +47,7 @@ func TestNewModeSelector(t *testing.T) {
 }
 
 func TestInit(t *testing.T) {
-	selector := NewModeSelector([]string{"Option1", "Option2"}, "", "")
+	selector := NewModeSelector([]string{"Option1", "Option2"}, "", "", 10, 10)
 	cmd := selector.Init()
 	assert.Nil(t, cmd)
 }
@@ -60,50 +62,60 @@ func TestUpdate(t *testing.T) {
 	}{
 		{
 			name:    "Test up key",
-			initial: NewModeSelector([]string{"Option1", "Option2"}, "", ""),
+			initial: NewModeSelector([]string{"Option1", "Option2"}, "", "", 10, 10),
 			msg:     tea.KeyMsg{Type: tea.KeyUp},
 			expected: ModeSelector{
 				Choices: []string{"Option1", "Option2"},
 				cursor:  0,
+				Width:   5,
+				Height:  10,
 			},
 		},
 		{
 			name:    "Test down key",
-			initial: NewModeSelector([]string{"Option1", "Option2"}, "", ""),
+			initial: NewModeSelector([]string{"Option1", "Option2"}, "", "", 10, 10),
 			msg:     tea.KeyMsg{Type: tea.KeyDown},
 			expected: ModeSelector{
 				Choices: []string{"Option1", "Option2"},
 				cursor:  1,
+				Width:   5,
+				Height:  10,
 			},
 		},
 		{
 			name:    "Test enter key",
-			initial: NewModeSelector([]string{"Option1", "Option2"}, "", ""),
+			initial: NewModeSelector([]string{"Option1", "Option2"}, "", "", 10, 10),
 			msg:     tea.KeyMsg{Type: tea.KeyEnter},
 			expected: ModeSelector{
 				Choices:  []string{"Option1", "Option2"},
 				cursor:   0,
 				Selected: "Option1",
 				Done:     true,
+				Width:    5,
+				Height:   10,
 			},
 		},
 		{
 			name:    "Test esc key",
-			initial: NewModeSelector([]string{"Option1", "Option2"}, "", ""),
+			initial: NewModeSelector([]string{"Option1", "Option2"}, "", "", 10, 10),
 			msg:     tea.KeyMsg{Type: tea.KeyEsc},
 			expected: ModeSelector{
 				Choices: []string{"Option1", "Option2"},
 				cursor:  0,
 				Back:    true,
+				Width:   5,
+				Height:  10,
 			},
 		},
 		{
 			name:    "Test quit keys",
-			initial: NewModeSelector([]string{"Option1", "Option2"}, "", ""),
+			initial: NewModeSelector([]string{"Option1", "Option2"}, "", "", 10, 10),
 			msg:     tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}, Alt: false},
 			expected: ModeSelector{
 				Choices: []string{"Option1", "Option2"},
 				cursor:  0,
+				Width:   5,
+				Height:  10,
 			},
 			cmdChecker: func(cmd tea.Cmd) {
 				if cmd != nil {
@@ -136,7 +148,7 @@ func TestView(t *testing.T) {
 	}{
 		{
 			name:     "View with cursor at default position",
-			selector: NewModeSelector([]string{"Option1", "Option2"}, "testfile", "Fast mode"),
+			selector: NewModeSelector([]string{"Option1", "Option2"}, "testfile", "Fast mode", 10, 10),
 			expected: "Select 'Fast mode' if you want to toggle all your files by giving just indications about start label and end label. Select 'Slow mode' if you want to specify what action to perform file by file. > Option1 Option2",
 		},
 		{

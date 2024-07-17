@@ -7,6 +7,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type LabelInput struct {
@@ -17,14 +18,18 @@ type LabelInput struct {
 	flash   bool
 	Error   error
 	Back    bool
+	Width   int
+	Height  int
 }
 
-func NewLabelInput(File string) LabelInput {
+func NewLabelInput(File string, width, height int) LabelInput {
 	return LabelInput{
 		File:    File,
 		Input:   "",
 		Done:    false,
 		IsLabel: false,
+		Height:  height,
+		Width:   width / 2,
 	}
 }
 
@@ -56,6 +61,9 @@ func (m LabelInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyEsc:
 			m.Back = true
 		}
+	case tea.WindowSizeMsg:
+		m.Width = msg.Width / 2
+		m.Height = msg.Height
 
 	case tickMsg:
 		m.flash = !m.flash
@@ -72,7 +80,7 @@ func (m LabelInput) View() string {
 		flash = Paint("green").Render("▎")
 	}
 
-	s := Paint("silver").Render("Type below the section to modify. You can insert your start label\nand your end label using the syntax 'start';'end' or you can modify\n a single line by entering the line number or a range of lines using the syntax x-y") + "\n\n"
+	s := Paint("silver").Render("\n Type below the section to modify. You can insert your start label\nand your end label using the syntax 'start';'end' or you can modify\n a single line by entering the line number or a range of lines using the syntax x-y") + "\n\n"
 	if m.File != "" {
 		s += Paint("green").Render(m.File+": ✏ "+m.Input) + flash + "\n"
 	} else {
@@ -84,7 +92,7 @@ func (m LabelInput) View() string {
 	}
 
 	s += Paint("silver").Render("\n 'ctrl +c' to quit     'enter' to select  the lines/labels indicated     'esc' to go back\n  '↑' to go up\n '↓' to go down")
-	return s
+	return lipgloss.Place(m.Width, m.Height, lipgloss.Left, lipgloss.Top, s)
 }
 
 func StartTicker() tea.Cmd {
