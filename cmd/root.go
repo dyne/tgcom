@@ -30,13 +30,14 @@ var rootCmd = &cobra.Command{
 	comment or uncomment pieces of code. It supports many different
 	languages including Go, C, Java, Python, Bash, and many others...`,
 	Run: func(cmd *cobra.Command, args []string) {
+
 		if remotePath != "" {
 			executeRemoteCommand(remotePath)
 			return
 		}
 
 		if noFlagsGiven(cmd) {
-			customUsageFunc(cmd)
+			cmd.Help() // Show the default help message if no flags are given
 			os.Exit(1)
 		}
 		ReadFlags(cmd)
@@ -51,9 +52,6 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.SetHelpFunc(customHelpFunc)
-	rootCmd.SetUsageFunc(customUsageFunc)
-
 	rootCmd.PersistentFlags().StringVarP(&FileToRead, "file", "f", "", "pass argument to the flag and will modify the file content")
 	rootCmd.PersistentFlags().StringVarP(&inputFlag.LineNum, "line", "l", "", "pass argument to line flag and will modify the line in the specified range")
 	rootCmd.PersistentFlags().BoolVarP(&inputFlag.DryRun, "dry-run", "d", false, "pass argument to dry-run flag and will print the result")
@@ -63,13 +61,13 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&inputFlag.Lang, "language", "L", "", "pass argument to language to specify the language of the input code")
 	rootCmd.PersistentFlags().StringVarP(&remotePath, "remote", "w", "", "pass remote user, host, and directory in the format user@host:/path/to/directory")
 	rootCmd.PersistentFlags().BoolVarP(&Tui, "tui", "t", false, "run the terminal user interface")
+
 	// Mark flags based on command name
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		if cmd.Name() != "server" {
 			cmd.MarkFlagsRequiredTogether("start-label", "end-label")
 			cmd.MarkFlagsMutuallyExclusive("line", "start-label")
 			cmd.MarkFlagsMutuallyExclusive("line", "end-label")
-			cmd.MarkFlagsOneRequired("file", "language", "remote", "tui")
 			cmd.MarkFlagsMutuallyExclusive("file", "language")
 		}
 		return nil
@@ -77,6 +75,8 @@ func init() {
 
 	// Register server command
 	rootCmd.AddCommand(serverCmd)
+
+	rootCmd.CompletionOptions.DisableDefaultCmd = true
 }
 
 func noFlagsGiven(cmd *cobra.Command) bool {
@@ -156,51 +156,6 @@ func ReadFlags(cmd *cobra.Command) {
 	}
 }
 
-func customHelpFunc(cmd *cobra.Command, args []string) {
-	fmt.Println("Tgcom CLI Application")
-	fmt.Println()
-	fmt.Println(cmd.Long)
-	fmt.Println()
-	fmt.Println("Usage:")
-	fmt.Println("  tgcom [flags]")
-	fmt.Println()
-	fmt.Println("Flags:")
-	cmd.Flags().VisitAll(func(flag *pflag.Flag) {
-		if flag.Name == "action" {
-			fmt.Printf("  -%s, --%s: %s (default: %s)\n", flag.Shorthand, flag.Name, flag.Usage, flag.DefValue)
-		} else {
-			fmt.Printf("  -%s, --%s: %s\n", flag.Shorthand, flag.Name, flag.Usage)
-		}
-	})
-	fmt.Println()
-	fmt.Println("Supported Languages:")
-	for lang := range modfile.CommentChars {
-		fmt.Println(lang)
-	}
-	fmt.Println()
-	fmt.Println("Examples:")
-	fmt.Println("  # Toggle comments on lines 1-5 in example.go")
-	fmt.Println("  tgcom -f example.go -l 1-5 -a toggle")
-	fmt.Println()
-	fmt.Println("  # Dry run: show the changes without modifying the file")
-	fmt.Println("  tgcom -f example.go -s START -e END -a toggle -d")
-}
-
-func customUsageFunc(cmd *cobra.Command) error {
-	fmt.Println(cmd.Short)
-	fmt.Println("Usage:")
-	fmt.Printf("  %s\n", cmd.UseLine())
-	fmt.Println()
-	fmt.Println("Flags:")
-	cmd.Flags().VisitAll(func(flag *pflag.Flag) {
-		if flag.Name == "action" {
-			fmt.Printf("  -%s, --%s: %s (default: %s)\n", flag.Shorthand, flag.Name, flag.Usage, flag.DefValue)
-		} else {
-			fmt.Printf("  -%s, --%s: %s\n", flag.Shorthand, flag.Name, flag.Usage)
-		}
-	})
-	return nil
-}
 func clearScreen() {
 	var cmd *exec.Cmd
 	switch runtime.GOOS {

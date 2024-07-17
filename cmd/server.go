@@ -27,11 +27,6 @@ var serverCmd = &cobra.Command{
 	},
 }
 
-func init() {
-	// Register the server command
-	rootCmd.AddCommand(serverCmd)
-}
-
 func executeRemoteCommand(remotePath string) {
 	parts := strings.SplitN(remotePath, "@", 2)
 	if len(parts) != 2 {
